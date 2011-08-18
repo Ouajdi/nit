@@ -139,6 +139,7 @@ void initialize_gc_option(void) {
 void prepare_signals(void) {
 	initialize_gc_option();
 
+#ifndef ANDROID
 	signal(SIGINT,exithandler);
 	signal(SIGABRT,exithandler);
 	signal(SIGSEGV,exithandler);
@@ -146,6 +147,7 @@ void prepare_signals(void) {
 	signal(SIGFPE, exithandler);
 	signal(SIGTERM,exithandler);
 	signal(SIGBUS, exithandler);
+#endif
 }
 struct stack_frame_t *stack_frame_head = NULL;
 void nit_exit(int i) {
