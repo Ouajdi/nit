@@ -1207,11 +1207,24 @@ redef class TBadString
     end
 end
 
+redef class TExternCodeSegment
+    redef fun parser_index: Int
+    do
+	return 92
+    end
+
+    init init_tk(text: String, loc: Location)
+    do
+        _text = text
+		_location = loc
+    end
+end
+
 
 redef class EOF
     redef fun parser_index: Int
     do
-	return 92
+	return 93
     end
 
     init(loc: Location)
@@ -1676,6 +1689,10 @@ class Lexer
 					if accept_token == 92 then
 						var token_text = string.substring(start_stream_pos, accept_length)
 						return new TBadString.init_tk(token_text, location)
+					end
+					if accept_token == 93 then
+						var token_text = string.substring(start_stream_pos, accept_length)
+						return new TExternCodeSegment.init_tk(token_text, location)
 					end
 				else
 					_stream_pos = sp
