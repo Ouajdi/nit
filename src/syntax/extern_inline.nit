@@ -1,5 +1,6 @@
 intrude import mmbuilder
 import syntax_base
+import primitive_info
 
 # Extern code segment
 class ExternCode
