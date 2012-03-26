@@ -6,11 +6,13 @@ import primitive_info
 class ExternCode
 	var language : nullable String
 	var code : String
+	var location : nullable Location
 end
 
 redef class MMModule
 	# extern code blocks in module
 	var extern_code_blocks : Set[ExternCode] = new HashSet[ExternCode]
+	redef var uses_ffi : Bool = false
 end
 
 redef class MMLocalClass
@@ -18,61 +20,10 @@ redef class MMLocalClass
 	var extern_type : nullable ExternCode = null
 
 	# whare was the extern type explicitly declared
-	private var extern_type_origin_cache : nullable MMLocalClass = null
+	#private var extern_type_origin_cache : nullable MMLocalClass = null
 
 	# extern type of an extern class
-	private var extern_type_cache : nullable String = null
-
-	fun compute_extern_type
-	do
-		if extern_type_cache != null then return # already computed
-		if not global.is_extern then abort
-
-		if name == once "Pointer".to_symbol then
-			extern_type_cache = "void*"
-			extern_type_origin_cache = self
-			return
-		end
-
-		# find all extern types in direct parents
-		var extern_types = new HashSet[MMLocalClass]
-		for c in cshe.direct_greaters do
-			if c.global.is_extern then
-				extern_types.add( c.extern_type_origin )
-			end
-		end
-
-		if extern_types.length > 1 then
-			stderr.write("Error: Extern class {mmmodule}::{name} has ambiguous extern type, found in super classes: \n")
-			for c in extern_types do stderr.write( "{c.extern_type} from {c}\n" )
-			exit(1)
-		else if extern_types.length == 1 then
-			var source = extern_types.first
-			extern_type_cache = source.extern_type
-			extern_type_origin_cache = source
-		else
-			# Extern class has unknown extern type. This should never happen.
-			abort
-		end
-	end
-
-	redef fun extern_type : String
-	do
-		compute_extern_type
-		return extern_type_cache.as(not null)
-	end
-
-	fun extern_type_origin : MMLocalClass
-	do
-		compute_extern_type
-		return extern_type_origin_cache.as(not null)
-	end
-
-	private fun extern_type=( v : nullable String )
-	do
-		extern_type_cache = v
-		extern_type_origin_cache = self
-	end
+	#private var extern_type_cache : nullable String = null
 end
 
 redef class MMMethod
@@ -97,7 +48,7 @@ redef class AExternCodeBlock
 			var text = n_in_language.n_string.text
 			language = text.substring( 1, text.length-2 )
 		end
-		return new ExternCode( language, n_extern_code_segment.code )
+		return new ExternCode( language, n_extern_code_segment.code, n_extern_code_segment.location )
 	end
 end
 
@@ -114,6 +65,7 @@ redef class AExternPropdef
 					"Cannot implement the non extern method {method.full_name} with extern code" )
 			else
 				method.extern_implementation = n_extern_code_block.to_extern_code
+				method.mmmodule.uses_ffi = true
 			end
 		end
 	end
@@ -132,6 +84,7 @@ redef class AStdClassdef
 					"Cannot define an extern equivalent in the non extern class {local_class.name}" )
 			else
 				local_class.extern_type = extern_code_block.to_extern_code
+				local_class.mmmodule.uses_ffi = true
 			end
 		end
 	end
@@ -145,6 +98,7 @@ redef class MMSrcModule
 		super
 
 		# extern code blocks
+		if not node.n_extern_code_blocks.is_empty then uses_ffi = true
 		for n_extern_code_block in node.n_extern_code_blocks do
 			extern_code_blocks.add( n_extern_code_block.to_extern_code )
 		end

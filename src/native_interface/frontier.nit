@@ -146,6 +146,10 @@ redef class MMSrcModule
 			v.body.add( "#include \"{path}\"\n" )
 			v.header.add( "#include \"{path}\"\n" )
 		end
+		if uses_ffi then
+			v.header.add( "#include <{cname}._ffi.h>\n" )
+#			v.body.add( "#include \"{native_header.path_from_parent}\"\n" )
+		end
 
 		for local_class in local_classes do
 			### extern methods
@@ -165,6 +169,8 @@ redef class MMSrcModule
 				local_class.compile_defaut_extern_type( v )
 			end
 		end
+
+		v.compile_cached
 
 		v.header.add( "#endif\n" )
 	end
@@ -328,11 +334,11 @@ end
 redef class MMLocalClass
 	# Defines a defaut type for special of pointers in frontier.
 	# Can be overriden in the custime .nit.h file, as seen with nits.
-	fun compile_defaut_extern_type( v : FrontierVisitor )
+	fun compile_defaut_extern_type( v : FrontierVisitor ) # TODO rename
 	do
-		v.header.add( "#ifndef {get_type.friendly_extern_name}\n" )
-		v.header.add( "\ttypedef void* {get_type.friendly_extern_name};\n" )
-		v.header.add( "#endif\n\n" )
+#		v.header.add( "#ifndef {get_type.friendly_extern_name}\n" )
+#		v.header.add( "\ttypedef void* {get_type.friendly_extern_name};\n" )
+#		v.header.add( "#endif\n\n" )
 	end
 end
 
@@ -392,7 +398,7 @@ class FrontierVisitor
 
 	var cprogram : CProgram
 
-	fun compile_cached
+	fun compile_cached # TODO used
 	do
 		# types
 		for t in types do t.compile_to_frontier( self )

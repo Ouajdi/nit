@@ -23,7 +23,7 @@ import metamodel
 
 redef class MMLocalClass
 	# extern type of extern classes
-	fun extern_c_type : String is abstract
+	fun extern_c_type : String is abstract # do return "void*" # is abstract
 
 	# Cached primitive_info result
 	var _primitive_info_cache: nullable PrimitiveInfo = null
