@@ -16,6 +16,63 @@ end
 redef class MMLocalClass
 	# extern equivalent of class
 	var extern_type : nullable ExternCode = null
+
+	# whare was the extern type explicitly declared
+	private var extern_type_origin_cache : nullable MMLocalClass = null
+
+	# extern type of an extern class
+	private var extern_type_cache : nullable String = null
+
+	fun compute_extern_type
+	do
+		if extern_type_cache != null then return # already computed
+		if not global.is_extern then abort
+
+		if name == once "Pointer".to_symbol then
+			extern_type_cache = "void*"
+			extern_type_origin_cache = self
+			return
+		end
+
+		# find all extern types in direct parents
+		var extern_types = new HashSet[MMLocalClass]
+		for c in cshe.direct_greaters do
+			if c.global.is_extern then
+				extern_types.add( c.extern_type_origin )
+			end
+		end
+
+		if extern_types.length > 1 then
+			stderr.write("Error: Extern class {mmmodule}::{name} has ambiguous extern type, found in super classes: \n")
+			for c in extern_types do stderr.write( "{c.extern_type} from {c}\n" )
+			exit(1)
+		else if extern_types.length == 1 then
+			var source = extern_types.first
+			extern_type_cache = source.extern_type
+			extern_type_origin_cache = source
+		else
+			# Extern class has unknown extern type. This should never happen.
+			abort
+		end
+	end
+
+	redef fun extern_type : String
+	do
+		compute_extern_type
+		return extern_type_cache.as(not null)
+	end
+
+	fun extern_type_origin : MMLocalClass
+	do
+		compute_extern_type
+		return extern_type_origin_cache.as(not null)
+	end
+
+	private fun extern_type=( v : nullable String )
+	do
+		extern_type_cache = v
+		extern_type_origin_cache = self
+	end
 end
 
 redef class MMMethod
