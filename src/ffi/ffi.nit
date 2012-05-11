@@ -1,4 +1,5 @@
 import c
+import python
 
 redef class MMSrcModule
 	redef fun compile_separate_module(cprogram: CProgram)
