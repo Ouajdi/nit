@@ -28,7 +28,7 @@ bigint Int_fib___impl( bigint recv ) {
 /*
 C implementation of extern_methods::Int::sleep
 */
-void Int_sleep___impl( bigint recv ) {
+void Int_my_sleep___impl( bigint recv ) {
 	sleep( recv );
 }
 

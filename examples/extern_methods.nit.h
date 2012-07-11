@@ -17,7 +17,7 @@
 #include <extern_methods._nitni.h>
 
 bigint Int_fib___impl( bigint recv );
-void Int_sleep___impl( bigint recv );
+void Int_my_sleep___impl( bigint recv );
 float Int_atan_with___impl( bigint recv, bigint x );
 void Int_foo___impl( bigint recv );
 

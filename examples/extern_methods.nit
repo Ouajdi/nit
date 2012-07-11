@@ -32,7 +32,7 @@ redef enum Int
 	fun fib : Int is extern
 
 	# System call to sleep for "self" seconds
-	fun sleep is extern
+	fun my_sleep is extern
 
 	# Return atan2l( self, x ) from libmath
 	fun atan_with( x : Int ) : Float is extern
@@ -52,7 +52,7 @@ end
 print 12.fib
 
 print "sleeping 1 second..."
-1.sleep
+1.my_sleep
 
 print 100.atan_with( 200 )
 8.foo
