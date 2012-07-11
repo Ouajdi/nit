@@ -60,6 +60,26 @@ redef class Collection[ E ]
 	end
 end
 
+redef class Map[K,E]
+	# Return a random element in the collection
+	fun rand : nullable Couple[K,E]
+	do
+		if is_empty then return null
+
+		var rand_index = length.rand
+
+		iterate !each( k,e ) do
+			if rand_index == 0 then
+				return new Couple[K,E]( k, e )
+			else
+				rand_index -= 1
+			end
+		end
+
+		return null
+	end
+end
+
 fun atan2(x: Float, y: Float): Float is extern "kernel_Any_Any_atan2_2"
 fun pi: Float is extern "kernel_Any_Any_pi_0"
 fun srand_from(x: Int) is extern "kernel_Any_Any_srand_from_1"

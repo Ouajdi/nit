@@ -44,3 +44,23 @@ for i in [0..100] do
 	if random_float > 1.0 or random_float < 0.0 then print "Erroneous random float"
 end
 
+# Collection::rand
+assert (new List[String]).rand == null
+
+assert ["asdf"].rand == "asdf"
+
+var ar = ["a","b","c","d"]
+for i in [0..100] do assert ar.has( ar.rand.as(not null) )
+
+# Map::rand
+assert (new HashMap[String,Int]).rand == null
+
+var hm = new HashMap[String,Int]
+hm["a"] = 1
+hm["b"] = 2
+hm["c"] = 3
+for i in [0..100] do
+	var c = hm.rand
+	assert hm[c.first] == c.second
+end
+
