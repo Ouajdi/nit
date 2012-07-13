@@ -5,11 +5,13 @@ import syntax_base
 class ExternCode
 	var language : nullable String
 	var code : String
+	var location : nullable Location
 end
 
 redef class MMModule
 	# extern code blocks in module
 	var extern_code_blocks : Set[ExternCode] = new HashSet[ExternCode]
+	redef var uses_ffi : Bool = false
 end
 
 redef class MMLocalClass
@@ -39,7 +41,7 @@ redef class AExternCodeBlock
 			var text = n_in_language.n_string.text
 			language = text.substring( 1, text.length-2 )
 		end
-		return new ExternCode( language, n_extern_code_segment.code )
+		return new ExternCode( language, n_extern_code_segment.code, n_extern_code_segment.location )
 	end
 end
 
@@ -56,6 +58,7 @@ redef class AExternPropdef
 					"Cannot implement the non extern method {method.full_name} with extern code" )
 			else
 				method.extern_implementation = n_extern_code_block.to_extern_code
+				method.mmmodule.uses_ffi = true
 			end
 		end
 	end
@@ -74,6 +77,7 @@ redef class AStdClassdef
 					"Cannot define an extern equivalent in the non extern class {local_class.name}" )
 			else
 				local_class.extern_type = extern_code_block.to_extern_code
+				local_class.mmmodule.uses_ffi = true
 			end
 		end
 	end
@@ -87,6 +91,7 @@ redef class MMSrcModule
 		super
 
 		# extern code blocks
+		if not node.n_extern_code_blocks.is_empty then uses_ffi = true
 		for n_extern_code_block in node.n_extern_code_blocks do
 			extern_code_blocks.add( n_extern_code_block.to_extern_code )
 		end

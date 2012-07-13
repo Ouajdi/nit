@@ -1,6 +1,6 @@
 # This file is part of NIT ( http://www.nitlanguage.org ).
 #
-# Copyright 2011 Alexis Laferrière <alexis.laf@xymus.net>
+# Copyright 2012 Alexis Laferrière <alexis.laf@xymus.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,23 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Hooks in the compiler to add generation of frontier files
-module native_interface
+# provides ffi functionalities
+module ffi
 
-import frontier
-import compiling
+import c
 
 redef class MMSrcModule
 	redef fun compile_separate_module(cprogram: CProgram)
 	do
-		if is_extern_hybrid then
-			var visitor = new FrontierVisitor( self, cprogram )
-			compile_frontier( visitor )
-
-			var base_path = "{cprogram.compdir}/{name}"
-			visitor.write_to_files( base_path )
-		end
-
 		super
+
+		if is_extern_hybrid then
+			var visitor = new FFIVisitor( cprogram.program.tc, self )
+			# TODO use cprogram to add generated files?
+
+			# actually compile stub
+			accept_ffi_visitor( visitor )
+
+			# write to file
+			if uses_ffi then
+				visitor.compile( cprogram )
+			end
+		end
 	end
 end
