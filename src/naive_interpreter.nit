@@ -55,7 +55,7 @@ redef class ModelBuilder
 end
 
 # The visitor that interprets the Nit Program by walking on the AST
-private class NaiveInterpreter
+class NaiveInterpreter
 	# The modelbuilder that know the AST and its associations with the model
 	var modelbuilder: ModelBuilder
 
@@ -446,7 +446,7 @@ class PrimitiveInstance[E: Object]
 end
 
 # Information about local variables in a running method
-private class Frame
+class Frame
 	# The current visited node
 	# The node is stored by frame to keep a stack trace
 	var current_node: ANode
@@ -476,7 +476,7 @@ end
 
 redef class APropdef
 	# Execute a `mpropdef' associated with the current node.
-	private fun call(v: NaiveInterpreter, mpropdef: MMethodDef, args: Array[Instance]): nullable Instance
+	fun call(v: NaiveInterpreter, mpropdef: MMethodDef, args: Array[Instance]): nullable Instance
 	do
 		fatal(v, "Unimplemented {mpropdef}")
 		abort
@@ -764,9 +764,9 @@ redef class AExternMethPropdef
 		else if pname == "parser_action" then
 			return v.int_instance(parser_action(args[1].to_i, args[2].to_i))
 		end
-		fatal(v, "Unimplemented extern {mpropdef}")
-		abort
+		return normal_ffi_call( v, mpropdef, args )
 	end
+	fun normal_ffi_call(v: NaiveInterpreter, mpropdef: MMethodDef, args: Array[Instance]): nullable Instance is abstract
 end
 
 redef class AAttrPropdef

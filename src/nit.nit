@@ -20,6 +20,7 @@ module nit
 import modelbuilder
 import exprbuilder
 import naive_interpreter
+import dynamic_ffi
 
 # Create a tool context to handle options and paths
 var toolcontext = new ToolContext
