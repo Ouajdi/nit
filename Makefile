@@ -18,7 +18,7 @@ NITCOPT=
 
 all: tools doc/stdlib/index.html
 
-docs: doc/stdlib/index.html doc/nitc/index.html
+docs: doc/stdlib/index.html doc/nitc/index.html doc/nit/index.html
 	cd doc; make
 
 tools:
@@ -32,6 +32,9 @@ doc/stdlib/index.html: tools
 
 doc/nitc/index.html: tools
 	bin/nitdoc src/nitc.nit src/nitdoc.nit -d doc/nitc --custom-overview-text '<p>Documentation for the nit compiler</p>' --custom-footer-text 'Nit compiler. Version '`git describe`'.'
+
+doc/nit/index.html: tools
+	bin/nitdoc src/nit.nit -d doc/nit --custom-overview-text '<p>Documentation for the nit interpreter</p>' --custom-footer-text 'Nit interpreter. Version '`git describe`'.'
 
 clean:
 	rm -rf -- .nit_compile 2> /dev/null || true
