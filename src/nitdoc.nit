@@ -606,6 +606,7 @@ redef class MMModule
 		end
 
 		var op = new Buffer
+		var name = "class_{name}"
 		op.append("digraph {name} \{ rankdir=BT; node[shape=none,margin=0,width=0,height=0,fontsize=10]; edge[dir=none,color=gray]; ranksep=0.2; nodesep=0.1;\n")
 		var ms = new Array[nullable MMModule]
 		do
