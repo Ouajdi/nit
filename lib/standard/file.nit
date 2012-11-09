@@ -19,6 +19,11 @@ intrude import stream
 intrude import string
 import string_search
 
+in "C Header" `{
+	#include <sys/types.h>
+	#include <dirent.h>
+`}
+
 redef class Object
 # Simple I/O
 
@@ -310,7 +315,36 @@ redef class String
 	end
 
 	# returns files contained within the directory represented by self
-	fun files : Set[ String ] is extern import HashSet, HashSet::add, String::from_cstring, String::to_cstring, HashSet[String] as( Set[String] ), String as( Object )
+	fun files : Set[ String ] is extern import HashSet, HashSet::add, String::from_cstring, String::to_cstring, HashSet[String] as( Set[String] ), String as( Object ) `{
+		char *dir_path;
+		DIR *dir;
+
+		dir_path = String_to_cstring( recv );
+		if ((dir = opendir(dir_path)) == NULL)
+		{
+			perror( dir_path );
+			exit( 1 );
+		}
+		else
+		{
+			HashSet results;
+			String file_name;
+			struct dirent *de;
+
+			results = new_HashSet();
+
+			while ( ( de = readdir( dir ) ) != NULL )
+				if ( strcmp( de->d_name, ".." ) != 0 &&
+					strcmp( de->d_name, "." ) != 0 )
+				{
+					file_name = new_String_from_cstring( strdup( de->d_name ) );
+					HashSet_add( results, String_as_Object( file_name ) );
+				}
+
+			closedir( dir );
+			return HashSet_as_Set( results );
+		}
+	`}
 end
 
 redef class NativeString
