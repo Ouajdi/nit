@@ -52,6 +52,23 @@ class FFICompiler
 		# ready extern code compiler
 		var ecc = new ExternCodeCompiler #( "TODO", m )
 
+		# TODO move to legacy native interface
+		if m.location.file != null then
+			var source_file = m.location.file.filename
+
+			# .c
+			var hybrid_c_files = ["{source_file}.c","{source_file.strip_extension(".nit")}_nit.c"]
+			for f in hybrid_c_files do if f.file_exists then
+				files.add( f )
+			end
+
+			# .h
+			var hybrid_h_files = ["{source_file}.h","{source_file.strip_extension(".nit")}_nit.h"]
+			for f in hybrid_h_files do if f.file_exists then
+				ecc.header_c_base.add( "#include \"{f}\"" )
+			end
+		end
+
 		# generate code
 		for block in m.n_extern_code_blocks do
 			block.handler.compile_module_block( block, m, ecc )
@@ -62,14 +79,31 @@ class FFICompiler
 				var c_type = nclassdef.n_extern_code_block.handler.compile_extern_class( nclassdef.n_extern_code_block.as(not null), nclassdef, ecc )
 			end
 			for npropdef in nclassdef.n_propdefs do
-				if npropdef isa AExternMethPropdef and npropdef.n_extern_code_block != null then # extern methods
-					npropdef.n_extern_code_block.handler.compile_extern_method( npropdef.n_extern_code_block.as(not null), npropdef, ecc )
+				if npropdef isa AExternMethPropdef then
+
+					# TODO remove this hack when callbacks are implemented
+					if npropdef.n_extern_calls != null and not npropdef.n_extern_calls.n_extern_calls.is_empty then continue
+
+					if npropdef.n_extern_code_block != null then # extern methods
+						npropdef.n_extern_code_block.handler.compile_extern_method( npropdef.n_extern_code_block.as(not null), npropdef, ecc )
+					else if npropdef.n_extern != null then
+						# TODO move to legacy native interface
+						# legacy nit native interface in the form of: fun foo is extren "module_foo_2"
+						var fc = new ExternFunctionCompiler( npropdef )
+						fc.decls.add( npropdef.n_extern.location.as_line_pragma )
+						if npropdef.mpropdef.msignature.return_mtype != null then
+							fc.exprs.add( "\treturn {npropdef.n_extern.without_quotes};" )
+						else
+							fc.exprs.add( "\t{npropdef.n_extern.without_quotes};" )
+						end
+						ecc.add_exported( fc )
+					end
 				end
 			end
 		end
 
 		ecc.write_as_impl( m, compdir )
-		files = ecc.files # TODO this is a horrible hack :(
+		files.append( ecc.files ) # TODO this is a horrible hack :(
 	end
 end
 
