@@ -128,6 +128,11 @@ redef class AExternMethPropdef
 			return
 		end
 
+		if not v.compiler.supports_ffi then
+			super
+			return
+		end
+
 		amodule.mmodule.uses_ffi = true
 
 		var mclass_type = mpropdef.mclassdef.bound_mtype
@@ -191,6 +196,11 @@ redef class AExternInitPropdef
 		var nextern = self.n_extern
 		if nextern != null then
 			amodule.uses_legacy_ni = true
+			super
+			return
+		end
+
+		if not v.compiler.supports_ffi then
 			super
 			return
 		end
