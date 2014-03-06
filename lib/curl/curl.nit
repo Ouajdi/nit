@@ -475,3 +475,36 @@ class HeaderMapIterator
 	redef fun item do return self.iterator.item.second
 	redef fun key do return self.iterator.item.first
 end
+
+# Small class to represent an Http Fetcher
+class HttpStringFetcher
+	super CurlHTTPRequest
+
+	protected var header_lines = new Array[String]
+	protected var body_lines = new Array[String]
+
+	fun header: String do return header_lines.to_s
+	fun body: String do return body_lines.to_s
+
+	redef fun header_callback(line) do header_lines.add line
+	redef fun body_callback(line) do body_lines.add line
+end
+
+redef class String
+	fun uri_get: nullable String
+	do
+		var curl = new Curl
+		var request = new HttpStringFetcher(self, curl)
+		#var headers = new HeaderMap
+		#downloadFileRequest.verbose = false
+		#var downloadResponse = request.download_to_file(null)
+		var response = request.execute
+
+		if response isa CurlResponseSuccess then
+			return request.body
+		else if response isa CurlResponseFailed then
+			print "Curl error getting '{self}': {response.error_msg}"
+			return null
+		else abort
+	end
+end
