@@ -58,6 +58,7 @@ class Hole
 			else if (80.0*game.speed_modifier).to_i.rand == 0 then
 				# hide
 				up = false
+				game.life -= 1
 			end
 		else if (100.0*game.speed_modifier).to_i.rand == 0 then
 			# show up
@@ -94,7 +95,7 @@ class Hole
 
 		if trap then
 			up = false
-			game.points -= 5
+			game.life -= 5
 			if game.points < 0 then game.points = 0
 		else
 			hitted = true
@@ -105,7 +106,11 @@ end
 
 class Game
 	var holes = new Array[Hole].with_capacity(4)
+	var life = 30
 
+	#high  score for the current game
+	var current_high_score = 0
+	
 	# rule / const
 	var modifier_half_life = 1000.0
 	fun rows: Int do return 4
@@ -118,7 +123,7 @@ class Game
 	# configs
 	var dist_between_rows = 512
 	var dist_between_columns = 600
-	fun global_speed_modifier: Float do return 2.0
+	fun global_speed_modifier: Float do return 5.0
 
 	init
 	do
@@ -133,8 +138,17 @@ class Game
 
 	fun do_turn do
 		for hole in holes do hole.do_turn
-
 		speed_modifier = modifier_half_life / (modifier_half_life+points.to_f) * global_speed_modifier
+		if self.life < 0 then 
+			speed_modifier = 1.0
+			life = 30
+			if points > current_high_score then current_high_score = points
+			points = 0
+			for hole in holes do
+				hole.up = false
+				hole.trap = false
+			end
+		end
 	end
 end
 
@@ -178,6 +192,8 @@ class Screen
 		display.blit(sign_cute, (540.0*display_scale).to_i, (-180.0*display_scale).to_i)
 		display.blit(sign_hits, (1340.0*display_scale).to_i, (55.0*display_scale).to_i)
 		display.blit_number(numbers, game.points, (1460.0*display_scale).to_i, (270.0*display_scale).to_i)
+		display.blit_number(numbers, game.life, (1460.0*display_scale).to_i, (340.0*display_scale).to_i)
+		display.blit_number(numbers, game.current_high_score, (1460.0*display_scale).to_i, (410.0*display_scale).to_i)
 
 		for hole in game.holes do
 			# Hole
