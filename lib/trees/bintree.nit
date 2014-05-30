@@ -122,6 +122,13 @@ class BinTreeMap[K: Comparable, E]
 		return min_from(root.as(not null)).value
 	end
 
+	fun pop_min: E do
+		assert not_empty: root != null
+		var node = min_from(root.as(not null))
+		delete_node node
+		return node.value
+	end
+
 	protected fun min_from(node: N): N do
 		if node.left == null then return node
 		return min_from(node.left.as(not null))
@@ -207,6 +214,11 @@ class BinTreeMap[K: Comparable, E]
 		len -= 1
 		var node = search_down(root.as(not null), key)
 		if node == null then return null
+		return delete_node(node)
+	end
+
+	private fun delete_node(node: N): nullable E
+	do
 		if node.left == null then
 			transplant(node, node.right)
 		else if node.right == null then
