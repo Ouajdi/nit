@@ -92,6 +92,13 @@ class BinTreeMap[K: Comparable, E]
 		assert has_key: res != null
 		return res.value
 	end
+	
+	fun has(key: K): Bool do
+		# TODO cache the result
+		if root == null then return false
+		var res = search_down(root.as(not null), key)
+		return res != null
+	end
 
 	protected fun search_down(from: N, key: K): nullable N do
 		var cmp = key <=> from.key
