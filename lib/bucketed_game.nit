@@ -30,7 +30,13 @@ end
 # Something acting on the game from time to time
 class Bucketable[G: Game]
 	super Turnable[G]
-	private var act_at: Int = 0
+	private var act_at: nullable Int = null
+
+	# Cancel the previously registered acting turn
+	#
+	# Once called, `self.do_turn` will not be invoked until `GameTurn::act_next`
+	# or `GameTurn::act_in` are called again.
+	fun cancel_act do act_at = null
 end
 
 # Optiomized organization of `Bucketable` instances
@@ -79,10 +85,10 @@ class Buckets[G: Game]
 		next_bucket = new HashSet[Bucketable[G]]
 
 		for e in current_bucket do
-			if e.act_at == turn.tick then
+			if turn.tick == e.act_at then
 				e.do_turn(turn)
-			else if e.act_at > turn.tick and
-				key_for_tick(e.act_at) == current_bucket_key
+			else if e.act_at != null and e.act_at > turn.tick and
+				key_for_tick(e.act_at.as(not null)) == current_bucket_key
 			then
 				next_bucket.as(not null).add(e)
 			end
