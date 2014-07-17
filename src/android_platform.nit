@@ -175,7 +175,7 @@ $(call import-module,android/native_app_glue)
 
         <!-- Our activity is the built-in NativeActivity framework class.
              This will take care of integrating with our NDK code. -->
-        <activity android:name="android.app.NativeActivity"
+        <activity android:name=".AppNitNativeActivity"
                 android:label="@string/app_name"
                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
                 android:configChanges="orientation|keyboardHidden"
