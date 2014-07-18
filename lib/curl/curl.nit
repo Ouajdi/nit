@@ -48,7 +48,7 @@ class CurlRequest
 	fun execute: CurlResponse is abstract
 
 	# Intern perform method, lowest level of request launching
-	private fun perform: nullable CurlResponse
+	private fun perform: nullable CurlResponseFailed
 	do
 		if not self.curl.is_ok then return answer_failure(0, "Curl instance is not correctly initialized")
 
@@ -64,7 +64,7 @@ class CurlRequest
 	end
 
 	# Intern method with return a failed answer with given code and message
-	private fun answer_failure(error_code: Int, error_msg: String): CurlResponse
+	private fun answer_failure(error_code: Int, error_msg: String): CurlResponseFailed
 	do
 		return new CurlResponseFailed(error_code, error_msg)
 	end
@@ -243,7 +243,7 @@ class CurlMailRequest
 	end
 
 	# Configure server host and user credentials if needed.
-	fun set_outgoing_server(host: String, user: nullable String, pwd: nullable String):nullable CurlResponse
+	fun set_outgoing_server(host: String, user: nullable String, pwd: nullable String): nullable CurlResponseFailed
 	do
 		# Check Curl initialisation
 		if not self.curl.is_ok then return answer_failure(0, "Curl instance is not correctly initialized")
