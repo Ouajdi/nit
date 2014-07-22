@@ -61,6 +61,9 @@ redef class ModelBuilder
 		var compiler = new GlobalCompiler(mainmodule, self, runtime_type_analysis)
 		compiler.compile_header
 
+		if mainmodule.model.get_mclasses_by_name("Pointer") != null then
+			runtime_type_analysis.live_types.add(mainmodule.pointer_type)
+		end
 		for t in runtime_type_analysis.live_types do
 			compiler.declare_runtimeclass(t)
 		end
@@ -71,6 +74,9 @@ redef class ModelBuilder
 		for t in runtime_type_analysis.live_types do
 			if t.ctype == "val*" then
 				compiler.generate_init_instance(t)
+ 				if t.mclass.kind == extern_kind then
+					compiler.generate_box_instance(t)
+				end
 			else
 				compiler.generate_box_instance(t)
 			end
@@ -116,7 +122,7 @@ class GlobalCompiler
 		self.runtime_type_analysis = runtime_type_analysis
 		self.live_primitive_types = new Array[MClassType]
 		for t in runtime_type_analysis.live_types do
-			if t.ctype != "val*" then
+			if t.ctype != "val*" or t.mclass.name == "Pointer" then
 				self.live_primitive_types.add(t)
 			end
 		end
@@ -193,11 +199,11 @@ class GlobalCompiler
 			v.add_decl("{mtype.arguments.first.ctype} values[1];")
 		end
 
-		if mtype.ctype != "val*" then
+		if mtype.ctype_extern != "val*" then
 			# Is the Nit type is native then the struct is a box with two fields:
 			# * the `classid` to be polymorph
 			# * the `value` that contains the native value.
-			v.add_decl("{mtype.ctype} value;")
+			v.add_decl("{mtype.ctype_extern} value;")
 		end
 
 		# Collect all attributes and associate them a field in the structure.
@@ -252,7 +258,7 @@ class GlobalCompiler
 	fun generate_box_instance(mtype: MClassType)
 	do
 		assert self.runtime_type_analysis.live_types.has(mtype)
-		assert mtype.ctype != "val*"
+		#assert mtype.ctype != "val*" or mtype.mclass.name == "Pointer"
 		var v = self.new_visitor
 
 		self.header.add_decl("val* BOX_{mtype.c_name}({mtype.ctype});")
@@ -315,6 +321,42 @@ class GlobalCompilerVisitor
 			self.add("/* {res} left unintialized (cannot convert {value.mtype} to {mtype}) */")
 			self.add("PRINT_ERROR(\"Cast error: Cannot cast %s to %s.\\n\", \"{value.mtype}\", \"{mtype}\"); show_backtrace(1);")
 			return res
+		end
+	end
+
+	redef fun unbox(value, mtype)
+	do
+		if mtype isa MClassType and mtype.mclass.kind == extern_kind and
+		   mtype.mclass.name != "NativeString" then
+			var res = self.new_var_extern(mtype)
+			self.add "{res} = ((struct {mtype.c_name}*){value})->value; /* unboxing {value.mtype} */"
+			return res
+		else
+			return value
+		end
+	end
+
+	redef fun box(value, mtype)
+	do
+		if mtype isa MClassType and mtype.mclass.kind == extern_kind and
+		   mtype.mclass.name != "NativeString" then
+			   #var valtype = compiler.mainmodule.pointer_type
+			var valtype = value.mtype.as(MClassType)
+			var res = self.new_var(mtype)
+			if compiler.runtime_type_analysis != null and not compiler.runtime_type_analysis.live_types.has(value.mtype.as(MClassType)) then
+				self.add("/*no boxing of {value.mtype}: {value.mtype} is not live! */")
+				self.add("PRINT_ERROR(\"Dead code executed!\\n\"); show_backtrace(1);")
+				return res
+			end
+			#self.require_declaration("BOX_{valtype.c_name}")
+			self.add("{res} = BOX_{valtype.c_name}({value}); /* boxing {value.mtype} */")
+			#self.require_declaration("type_{mtype.c_name}")
+			#self.add("{res}->type = &type_{mtype.c_name};")
+			#self.require_declaration("class_{mtype.c_name}")
+			#self.add("{res}->classid = &class_{mtype.c_name};")
+			return res
+		else
+			return value
 		end
 	end
 
@@ -507,6 +549,7 @@ class GlobalCompilerVisitor
 	do
 		var recv_type = get_recvtype(m, recvtype, args)
 		var recv = get_recv(recv_type, args)
+		if m.is_extern then recv = unbox(recv, recv_type)
 		var new_args = args.to_a
 		self.varargize(m, m.msignature.as(not null), new_args)
 		new_args.first = recv
@@ -519,6 +562,7 @@ class GlobalCompilerVisitor
 	do
 		var recv_type = get_recvtype(m, recvtype, args)
 		var recv = get_recv(recv_type, args)
+		if m.is_extern then recv = unbox(recv, recv_type)
 		var new_args = args.to_a
 		new_args.first = recv
 		return finalize_call(m, recv_type, new_args)
@@ -589,6 +633,19 @@ class GlobalCompilerVisitor
 			end
 			t = self.resolve_for(t, recv)
 			args[i+1] = self.autobox(args[i+1], t)
+		end
+	end
+
+	redef fun unbox_signature(m, args)
+	do
+		var recv = args.first
+		for i in [0..m.msignature.arity[ do
+			var t = m.msignature.mparameters[i].mtype
+			if i == m.msignature.vararg_rank then
+				t = args[i+1].mtype
+			end
+			t = self.resolve_for(t, recv)
+			if m.is_extern then args[i+1] = self.unbox(args[i+1], t)
 		end
 	end
 
