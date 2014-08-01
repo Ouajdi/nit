@@ -35,9 +35,10 @@ class MasterHeader
 
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
+        <li{{{actives.get_or_default("ens", "")}}}><a href="http://xymus.net/ens/">Enseignement</a></li>
         <li><a href="http://pep8.xymus.net/">Pep/8 Analysis</a></li>
-        <li {{{actives.get_or_default("tnitter", "")}}}><a href="http://tnitter.xymus.net/">Tnitter</a></li>
-        <li {{{actives.get_or_default("benitlux", "")}}}><a href="http://benitlux.xymus.net/">Benitlux</a></li>
+        <li{{{actives.get_or_default("tnitter", "")}}}><a href="http://tnitter.xymus.net/">Tnitter</a></li>
+        <li{{{actives.get_or_default("benitlux", "")}}}><a href="http://benitlux.xymus.net/">Benitlux</a></li>
         <li><a href="http://nitlanguage.org/">Nit</a></li>
       </ul>
 
@@ -62,12 +63,12 @@ redef class BenitluxDocument
 end
 
 redef class ErrorTemplate
-	redef var header: Template = new MasterHeader(null, false)
+	redef var header = new MasterHeader(null, false)
 end
 
 # Setup server
-var default_vh = new VirtualHost("xymus.net:80")
-#var default_vh = new VirtualHost("localhost:8080")
+#var default_vh = new VirtualHost("xymus.net:80")
+var default_vh = new VirtualHost("localhost:8080")
 var vps_vh = new VirtualHost("vps.xymus.net:80")
 var tnitter_vh = new VirtualHost("tnitter.xymus.net:80")
 var pep8_vh = new VirtualHost("pep8.xymus.net:80")
@@ -82,11 +83,11 @@ factory.config.virtual_hosts.add benitlux_vh
 
 # Drop to a low-privileged user
 var user_group = new UserGroup("nitcorn", "nitcorn")
-user_group.drop_privileges
+if sys.uid == 0 then user_group.drop_privileges
 
 # Tnitter
 var tnitter = new Tnitter
-default_vh.routes.add new Route("/tnitter", tnitter)
+default_vh.routes.add new Route("/tnitter/", tnitter)
 tnitter_vh.routes.add new Route(null, tnitter)
 
 # Pep/8 Analysis
@@ -94,11 +95,17 @@ pep8_vh.routes.add new Route(null, new FileServer("/var/www/pep8/"))
 
 # Benitlux
 var benitlux = new BenitluxSubscriptionAction
-default_vh.routes.add new Route("/benitlux", benitlux)
+default_vh.routes.add new Route("/benitlux/", benitlux)
 benitlux_vh.routes.add new Route(null, benitlux)
 
 # Default / file server
-var file_server = new FileServer("/var/www/")
+var file_server = new FileServer("/home/xymus/projects/xymus.net/www/")
+file_server.header = (new MasterHeader(null, false))
+
+var file_server_ens = new FileServer("/home/xymus/projects/xymus.net/www/ens/")
+file_server_ens.header = (new MasterHeader("ens", false))
+
+default_vh.routes.add new Route("/ens/", file_server_ens)
 default_vh.routes.add new Route(null, file_server)
 vps_vh.routes.add new Route(null, file_server)
 
