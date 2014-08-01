@@ -58,7 +58,7 @@ redef class Tnitter
 end
 
 redef class BenitluxDocument
-	redef var header = new MasterHeader("tnitter", false)
+	redef var header = new MasterHeader("benitlux", false)
 end
 
 redef class ErrorTemplate
