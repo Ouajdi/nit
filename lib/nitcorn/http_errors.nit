@@ -26,13 +26,13 @@ class ErrorTemplate
 	super Template
 
 	# HTTP error code
-	var code: Int
+	var code: Int is writable
 
 	# Header on this page
-	var header: nullable Streamable = null
+	var header: nullable Streamable = null is writable
 
 	# Body to show with this page
-	fun body(code: Int): nullable Streamable do return null
+	var body: nullable Streamable = null is writable
 
 	redef fun rendering
 	do
@@ -64,7 +64,7 @@ class ErrorTemplate
 		add message
 		add "</h1>"
 
-		var body = body(code)
+		var body = body
 		if body != null then add body
 
 		add """
