@@ -61,8 +61,13 @@ redef class BenitluxDocument
 	redef var header = new MasterHeader("tnitter", false)
 end
 
+redef class ErrorTemplate
+	redef var header: Template = new MasterHeader(null, false)
+end
+
 # Setup server
 var default_vh = new VirtualHost("xymus.net:80")
+#var default_vh = new VirtualHost("localhost:8080")
 var vps_vh = new VirtualHost("vps.xymus.net:80")
 var tnitter_vh = new VirtualHost("tnitter.xymus.net:80")
 var pep8_vh = new VirtualHost("pep8.xymus.net:80")
@@ -70,6 +75,7 @@ var benitlux_vh = new VirtualHost("benitlux.xymus.net:80")
 
 var factory = new HttpFactory.and_libevent
 factory.config.virtual_hosts.add default_vh
+factory.config.virtual_hosts.add vps_vh
 factory.config.virtual_hosts.add tnitter_vh
 factory.config.virtual_hosts.add pep8_vh
 factory.config.virtual_hosts.add benitlux_vh
@@ -80,7 +86,7 @@ user_group.drop_privileges
 
 # Tnitter
 var tnitter = new Tnitter
-default_vh.routes.add new Route("/tnitter/", tnitter)
+default_vh.routes.add new Route("/tnitter", tnitter)
 tnitter_vh.routes.add new Route(null, tnitter)
 
 # Pep/8 Analysis
@@ -88,11 +94,12 @@ pep8_vh.routes.add new Route(null, new FileServer("/var/www/pep8/"))
 
 # Benitlux
 var benitlux = new BenitluxSubscriptionAction
-default_vh.routes.add new Route("/benitlux/", benitlux)
+default_vh.routes.add new Route("/benitlux", benitlux)
 benitlux_vh.routes.add new Route(null, benitlux)
 
 # Default / file server
-default_vh.routes.add new Route(null, new FileServer("/var/www/"))
-vps_vh.routes.add new Route(null, new FileServer("/var/www/"))
+var file_server = new FileServer("/var/www/")
+default_vh.routes.add new Route(null, file_server)
+vps_vh.routes.add new Route(null, file_server)
 
 factory.run
