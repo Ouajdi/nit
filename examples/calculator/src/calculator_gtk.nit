@@ -1,6 +1,6 @@
 # This file is part of NIT ( http://www.nitlanguage.org ).
 #
-# Copyright 2013 Alexis Laferrière <alexis.laf@xymus.net>
+# Copyright 2013-2014 Alexis Laferrière <alexis.laf@xymus.net>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,80 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# GTK calculator
+module calculator_gtk
+
+import calculator_logic
+
 import gtk
-
-class CalculatorContext
-	var result : nullable Float = null
-
-	var last_op : nullable Char = null
-
-	var current : nullable Float = null
-	var after_point : nullable Int = null
-
-	fun push_op( op : Char )
-	do
-		apply_last_op_if_any
-		if op == 'C' then
-			self.result = 0.0
-			last_op = null
-		else
-			last_op = op # store for next push_op
-		end
-
-		# prepare next current
-		after_point = null
-		current = null
-	end
-
-	fun push_digit( digit : Int )
-	do
-		var current = current
-		if current == null then current = 0.0
-
-		var after_point = after_point
-		if after_point == null then
-			current = current * 10.0 + digit.to_f
-		else
-			current = current + digit.to_f * 10.0.pow(after_point.to_f)
-			self.after_point -= 1
-		end
-
-		self.current = current
-	end
-
-	fun switch_to_decimals
-	do
-		if self.current == null then current = 0.0
-		if after_point != null then return
-
-		after_point = -1
-	end
-
-	fun apply_last_op_if_any
-	do
-		var op = last_op
-
-		var result = result
-		if result == null then result = 0.0
-
-		var current = current
-		if current == null then current = 0.0
-
-		if op == null then
-			result = current
-		else if op == '+' then
-			result = result + current
-		else if op == '-' then
-			result = result - current
-		else if op == '/' then
-			result = result / current
-		else if op == '*' then
-			result = result * current
-		end
-		self.result = result
-		self.current = null
-	end
-end
 
 class CalculatorGui
 	super GtkCallable
@@ -197,76 +129,8 @@ class CalculatorGui
 	end
 end
 
-# context tests
-var context = new CalculatorContext
-context.push_digit( 1 )
-context.push_digit( 2 )
-context.push_op( '+' )
-context.push_digit( 3 )
-context.push_op( '*' )
-context.push_digit( 2 )
-context.push_op( '=' )
-var r = context.result.to_precision( 2 )
-assert r == "30.00" else print r
-
-context = new CalculatorContext
-context.push_digit( 1 )
-context.push_digit( 4 )
-context.switch_to_decimals
-context.push_digit( 1 )
-context.push_op( '*' )
-context.push_digit( 3 )
-context.push_op( '=' )
-r = context.result.to_precision( 2 )
-assert r == "42.30" else print r
-
-context.push_op( '+' )
-context.push_digit( 1 )
-context.push_digit( 1 )
-context.push_op( '=' )
-r = context.result.to_precision( 2 )
-assert r == "53.30" else print r
-
-context = new CalculatorContext
-context.push_digit( 4 )
-context.push_digit( 2 )
-context.switch_to_decimals
-context.push_digit( 3 )
-context.push_op( '/' )
-context.push_digit( 3 )
-context.push_op( '=' )
-r = context.result.to_precision( 2 )
-assert r == "14.10" else print r
-
-#test multiple decimals
-context = new CalculatorContext
-context.push_digit( 5 )
-context.push_digit( 0 )
-context.switch_to_decimals
-context.push_digit( 1 )
-context.push_digit( 2 )
-context.push_digit( 3 )
-context.push_op( '+' )
-context.push_digit( 1 )
-context.push_op( '=' )
-r = context.result.to_precision( 3 )
-assert r == "51.123" else print r
-
-#test 'C' button
-context = new CalculatorContext
-context.push_digit( 1 )
-context.push_digit( 0 )
-context.push_op( '+' )
-context.push_digit( 1 )
-context.push_digit( 0 )
-context.push_op( '=' )
-context.push_op( 'C' )
-r = context.result.to_precision( 1 )
-assert r == "0.0" else print r
-
 # graphical application
+if "NIT_TESTING".environ == "true" then exit 0
 
-if "NIT_TESTING".environ != "true" then
-	var app = new CalculatorGui
-	run_gtk
-end
+var app = new CalculatorGui
+run_gtk
