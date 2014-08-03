@@ -25,6 +25,8 @@ class CalculatorContext
 	var current : nullable Float = null
 	var after_point : nullable Int = null
 
+	var display_text = ""
+
 	fun push_op( op : Char )
 	do
 		apply_last_op_if_any
@@ -38,6 +40,23 @@ class CalculatorContext
 		# prepare next current
 		after_point = null
 		current = null
+
+		# display text
+		var s = result.to_precision_native(6)
+		var index: nullable Int = null
+		for i in s.length.times do
+			var chiffre = s.chars[i]
+			if chiffre == '0' and index == null then
+				index = i
+			else if chiffre != '0' then
+				index = null
+			end
+		end
+		if index != null then
+			s = s.substring(0, index)
+			if s.chars[s.length-1] == '.' then s = s.substring(0, s.length-1)
+		end
+		self.display_text = s
 	end
 
 	fun push_digit( digit : Int )
@@ -52,8 +71,11 @@ class CalculatorContext
 			current = current + digit.to_f * 10.0.pow(after_point.to_f)
 			self.after_point -= 1
 		end
-
 		self.current = current
+
+		# display text
+		if after_point == null then after_point = 0
+		self.display_text = current.to_precision_native(after_point.abs)
 	end
 
 	fun switch_to_decimals
@@ -62,6 +84,9 @@ class CalculatorContext
 		if after_point != null then return
 
 		after_point = -1
+
+		# display text
+		display_text = "{current.to_i}."
 	end
 
 	fun apply_last_op_if_any
