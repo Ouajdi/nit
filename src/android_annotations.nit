@@ -76,19 +76,33 @@ redef class ModelBuilder
 		if annot != null then project.java_package = annot.arg_as_string(self)
 
 		var annots = collect_annotations_on_modules("min_api_version", mmodule)
-		for an in annots do project.min_api = an.arg_as_int(self)
+		if not annots.is_empty then
+			project.min_api = annots.pop.arg_as_int(self)
+			for an in annots do
+				var i = an.arg_as_int(self)
+				assert i isa Int
+				project.min_api = project.min_api.max(i)
+			end
+		end
 
 		annots = collect_annotations_on_modules("max_api_version", mmodule)
-		for an in annots do project.max_api = an.arg_as_int(self)
+		if not annots.is_empty then
+			project.max_api = annots.pop.arg_as_int(self)
+			for an in annots do
+				var i = an.arg_as_int(self)
+				assert i isa Int
+				project.max_api = project.max_api.min(i)
+			end
+		end
 
-		annots = collect_annotations_on_modules("target_api_version", mmodule)
-		for an in annots do project.target_api = an.arg_as_int(self)
+		annot = lookup_annotation_on_modules("target_api_version", mmodule)
+		if annot != null then project.target_api = annot.arg_as_int(self).as(not null)
 
 		annots = collect_annotations_on_modules("android_manifest", mmodule)
-		for an in annots do project.manifest_lines.add an.arg_as_string(self) or else ""
+		for an in annots do project.manifest_lines.add an.arg_as_string(self).as(not null)
 
 		annots = collect_annotations_on_modules("android_manifest_application", mmodule)
-		for an in annots do project.manifest_application_lines.add an.arg_as_string(self) or else ""
+		for an in annots do project.manifest_application_lines.add an.arg_as_string(self).as(not null)
 
 		# Get the date and time (down to the minute) as string
 		var local_time = new Tm.localtime
