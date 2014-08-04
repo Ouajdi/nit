@@ -18,75 +18,72 @@
 module calculator_logic
 
 class CalculatorContext
-	var result : nullable Float = null
+	var result: nullable Numeric = null
 
-	var last_op : nullable Char = null
+	var last_op: nullable Char = null
 
-	var current : nullable Float = null
-	var after_point : nullable Int = null
+	var current: nullable FlatBuffer = null
+	fun display_text: String
+	do
+		var result = result
+		var last_op = last_op
+		var current = current
 
-	var display_text = ""
+		var buf = new FlatBuffer
+
+		if result != null and (current == null or last_op != '=') then
+			if last_op == '=' then buf.append "= "
+
+			buf.append result.to_s
+			buf.add ' '
+		end
+
+		if last_op != null and last_op != '=' then
+			buf.add last_op
+			buf.add ' '
+		end
+
+		if current != null then
+			buf.append current.to_s
+			buf.add ' '
+		end
+
+		return buf.to_s
+	end
 
 	fun push_op( op : Char )
 	do
 		apply_last_op_if_any
 		if op == 'C' then
-			self.result = 0.0
+			self.result = null
 			last_op = null
 		else
 			last_op = op # store for next push_op
 		end
 
 		# prepare next current
-		after_point = null
-		current = null
-
-		# display text
-		var s = result.to_precision_native(6)
-		var index: nullable Int = null
-		for i in s.length.times do
-			var chiffre = s.chars[i]
-			if chiffre == '0' and index == null then
-				index = i
-			else if chiffre != '0' then
-				index = null
-			end
-		end
-		if index != null then
-			s = s.substring(0, index)
-			if s.chars[s.length-1] == '.' then s = s.substring(0, s.length-1)
-		end
-		self.display_text = s
+		self.current = null
 	end
 
 	fun push_digit( digit : Int )
 	do
 		var current = current
-		if current == null then current = 0.0
-
-		var after_point = after_point
-		if after_point == null then
-			current = current * 10.0 + digit.to_f
-		else
-			current = current + digit.to_f * 10.0.pow(after_point.to_f)
-			self.after_point -= 1
-		end
+		if current == null then current = new FlatBuffer
+		current.add digit.to_s.chars.first
 		self.current = current
 
-		# display text
-		if after_point == null then after_point = 0
-		self.display_text = current.to_precision_native(after_point.abs)
+		if last_op == '=' then
+			self.result = null
+			last_op = null
+		end
 	end
 
 	fun switch_to_decimals
 	do
-		if self.current == null then current = 0.0
-		if after_point != null then return
-
-		after_point = -1
-
-		# display text
-		display_text = "{current.to_i}."
+		var current = current
+		if current == null then current = new FlatBuffer.from("0")
+		if not current.chars.has('.') then current.add '.'
+		self.current = current
 	end
 
 	fun apply_last_op_if_any
@@ -94,23 +91,105 @@ class CalculatorContext
 		var op = last_op
 
 		var result = result
-		if result == null then result = 0.0
+		if result == null or result isa NotANumber then result = 0
 
 		var current = current
-		if current == null then current = 0.0
+		if current == null then current = new FlatBuffer
 
 		if op == null then
-			result = current
+			result = current.to_n
 		else if op == '+' then
-			result = result + current
+			result = result.add(current.to_n)
 		else if op == '-' then
-			result = result - current
+			result = result.sub(current.to_n)
 		else if op == '/' then
-			result = result / current
+			result = result.div(current.to_n)
 		else if op == '*' then
-			result = result * current
+			result = result.mul(current.to_n)
 		end
 		self.result = result
 		self.current = null
 	end
+end
+
+redef class Text
+	# Get the numeric version of `self`
+	#
+	# require: `is_numeric`
+	fun to_n: Numeric
+	do
+		if chars.has('.') then return to_f
+		return to_i
+	end
+end
+
+redef interface Numeric
+	# Universal `+` with any `Numeric`
+	#
+	# ~~~~
+	# assert 1.add(1) == 2
+	# assert 1.add(0.1) == 1.1
+	# assert 1.1.add(0.1) == 1.2
+	# assert 1.1.add(1) == 2.1
+	# ~~~~
+	fun add(other: Numeric): Numeric is abstract
+
+	# Universal `-` with any `Numeric`
+	fun sub(other: Numeric): Numeric is abstract
+
+	# Universal `/` with any `Numeric`
+	fun div(other: Numeric): Numeric is abstract
+
+	# Universal `*` with any `Numeric`
+	fun mul(other: Numeric): Numeric is abstract
+end
+
+redef universal Int
+	redef fun add(other) do if other isa Float then
+		return to_f + other
+	else return self + other.as(Int)
+
+	redef fun sub(other) do if other isa Float then
+		return to_f - other
+	else return self - other.as(Int)
+
+	redef fun mul(other) do if other isa Float then
+		return to_f * other
+	else return self * other.as(Int)
+
+	redef fun div(other) do if other isa Float then
+		if other == 0.0 then return new NotANumber
+		return to_f / other
+	else
+		if other == 0 then return new NotANumber
+		return self / other.as(Int)
+	end
+end
+
+redef universal Float
+	redef fun add(other) do return self + other.to_f
+	redef fun sub(other) do return self - other.to_f
+
+	redef fun div(other) do
+		other = other.to_f
+		if other == 0.0 then return new NotANumber
+		return self / other.to_f
+	end
+
+	redef fun mul(other) do return self * other.to_f
+	redef fun to_s do return to_precision(6)
+end
+
+class NotANumber
+	super Numeric
+
+	private init do end
+
+	redef fun add(other) do abort
+	redef fun sub(other) do abort
+	redef fun div(other) do abort
+	redef fun mul(other) do abort
+	redef fun to_i do abort
+	redef fun to_f do abort
+	redef fun to_s do return "NaN"
 end
