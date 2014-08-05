@@ -30,7 +30,7 @@ end
 class JavaLanguage
 	super FFILanguage
 
-	redef fun identify_language(n) do return n.is_java
+	redef fun identify_language(n) do return n.is_java or n.is_java_inner
 
 	redef fun compile_module_block(block, ccu, mmodule)
 	do
@@ -38,7 +38,9 @@ class JavaLanguage
 		var java_file = mmodule.java_file
 		assert java_file != null
 
-		java_file.header.add(block.code)
+		if block.is_java_inner then
+			java_file.class_content.add(block.code)
+		else java_file.header.add(block.code)
 	end
 
 	redef fun compile_extern_method(block, m, ccu, mmodule)
@@ -315,9 +317,12 @@ redef class AExternPropdef
 	end
 end
 
-redef class AExternCodeBlock
-	fun is_java : Bool do return language_name != null and
+redef class AExternCod
+	fun is_java: Bool do return language_name != null and
 		language_name_lowered == "java"
+
+	fun is_java_inner: Bool do return language_name != null and
+		language_name_lowered == "java inner"
 end
 
 # Java class source template
