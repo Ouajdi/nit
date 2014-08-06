@@ -133,30 +133,43 @@ class DB
 		end
 	end
 
-	# Build and return a `BeerEvents` for today
+	# Build and return a `BeerEvents` for today compared to the last weekday
 	fun beer_events_today: BeerEvents
 	do
+		var tm = new Tm.localtime
+		var last_weekday
+		if tm.wday == 1 then
+			# We're monday! we compare with the last friday
+			last_weekday = "date('now', 'weekday 6', '-7 day')"
+		else last_weekday = "date('now', '-1 day')"
+		tm.free
+
+		return beer_events_since(last_weekday)
+	end
+
+	# Build and return a `BeerEvents` for today compared to `prev_day`
+	fun beer_events_since(prev_day: String): BeerEvents
+	do
 		var events = new BeerEvents
-		var yesterday = "date('now', '-1 day')"
 
 		# New
 		for row in select("name, desc FROM beers WHERE " +
 		                  "ROWID IN (SELECT beer FROM daily WHERE date(day) = date('now')) AND " +
-		                  "NOT ROWID IN (SELECT beer FROM daily WHERE date(day) = date({yesterday}))") do
+		                  "NOT ROWID IN (SELECT beer FROM daily WHERE date(day) = date({prev_day}))") do
 			events.new_beers.add row.to_beer
 		end
 
 		# Gone
 		for row in select("name, desc FROM beers WHERE " +
 		                  "NOT ROWID IN (SELECT beer FROM daily WHERE date(day) = date('now')) AND " +
-		                  "ROWID IN (SELECT beer FROM daily WHERE date(day) = date({yesterday}))") do
+		                  "ROWID IN (SELECT beer FROM daily WHERE date(day) = date({prev_day}))") do
 			events.gone_beers.add row.to_beer
 		end
 
 		# Fix
 		for row in select("name, desc FROM beers WHERE " +
 		                  "ROWID IN (SELECT beer FROM daily WHERE date(day) = date('now')) AND " +
-		                  "ROWID IN (SELECT beer FROM daily WHERE date(day) = date({yesterday}))") do
+		                  "ROWID IN (SELECT beer FROM daily WHERE date(day) = date({prev_day}))") do
 			events.fix_beers.add row.to_beer
 		end
 
