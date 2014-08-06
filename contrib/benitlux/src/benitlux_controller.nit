@@ -22,11 +22,16 @@ import nitcorn
 import benitlux_model
 import benitlux_view
 
-class BenitluxSubscriptionAction
+class BenitluxAction
 	super Action
 
 	var db_path = "benitlux_sherbrooke.db"
 	var sample_email_path = "benitlux_sherbrooke.email"
+end
+
+# Web interface to subscribe to the mailing list
+class BenitluxSubscriptionAction
+	super BenitluxAction
 
 	redef fun answer(request, turi)
 	do
@@ -69,6 +74,32 @@ class BenitluxSubscriptionAction
 
 		var response = new HttpResponse(200)
 		response.body = template.write_to_string
+		return response
+	end
+end
+
+class BenitluxRESTAction
+	super BenitluxAction
+
+	redef fun answer(request, turi)
+	do
+		var words = turi.split("/")
+		if words.length >= 2 and words[0] == "since" then
+			var since = words[1]
+
+			var db = new DB.open(db_path)
+			var events = db.beer_events_since(since)
+			db.close
+
+			var response = new HttpResponse(200)
+			response.body = """
+events.to_email_content
+"""
+			return response
+		end
+
+		var response = new HttpResponse(400)
+		response.body = "Bad request"
 		return response
 	end
 end
