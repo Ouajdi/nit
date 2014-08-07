@@ -38,12 +38,12 @@ end
 redef extern class NativeNotificationBuilder
 	private fun style=(style: NotificationStyle) in "Java" `{ recv.setStyle(style); `}
 
-	redef fun create do return build
+	#redef fun create do return build
 
-	fun build: NativeNotification in "Java" `{  `}
+	#fun build: NativeNotification in "Java" `{  `}
 
 	fun progress(value, out_of: Int, indeterminate: Bool) in "Java" `{
-		recv.setProgress(value, out_of, indeterminate);
+		recv.setProgress((int)value, (int)out_of, indeterminate);
 	`}
 
 	fun sub_text=(value: JavaString) in "Java" `{ recv.setSubText(value); `}

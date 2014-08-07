@@ -46,6 +46,9 @@ class Notification
 	# Text content of this notification
 	var text: nullable Text is writable
 
+	var big_text: nullable Text = null is writable
+	var big_text_summary: nullable Text = null is writable
+
 	# Text to show in the bar as the notification appears
 	var ticker: nullable Text = null is writable
 
@@ -80,6 +83,10 @@ class Notification
 
 		# Other options
 		if title != null then builder.title = title.to_java_string
+		var big_text = self.big_text
+		if big_text != null then
+			big_text_intern(builder, big_text, big_text_summary)
+		end
 		if text != null then builder.text = text.to_java_string
 		if ticker != null then builder.ticker = ticker.to_java_string
 		builder.ongoing = ongoing
@@ -95,6 +102,8 @@ class Notification
 
 		sys.jni_env.pop_local_frame
 	end
+
+	private fun big_text_intern(builder: NativeNotificationBuilder, text: Text, summary: nullable Text) do end
 
 	# Was this notification shown with `show`?
 	#

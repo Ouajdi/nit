@@ -25,5 +25,5 @@ in "Java" `{
 `}
 
 redef extern class NativeNotificationBuilder
-	fun large_icon=(value: Int) in "Java" `{ recv.setLargeIcon(value); `}
+	fun large_icon=(value: Int) in "Java" `{ //recv.setLargeIcon((int)value); `}
 end
