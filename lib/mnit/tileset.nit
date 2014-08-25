@@ -94,6 +94,8 @@ class TileSetFont
 		if i == -1 then return null
 		return subimages[i]
 	end
+
+	fun advance(msg: String): Int do return msg.length * (width + hspace)
 end
 
 redef class Display
