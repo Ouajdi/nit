@@ -96,6 +96,14 @@ class TileSetFont
 	end
 
 	fun advance(msg: String): Int do return msg.length * (width + hspace)
+
+	fun text_height(text: Text): Int
+	do
+		if text.is_empty then return 0
+
+		var lines = text.split("\n")
+		return lines.length * (height + hspace) - hspace
+	end
 end
 
 redef class Display
