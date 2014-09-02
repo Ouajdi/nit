@@ -662,4 +662,9 @@ extern class Pointer
 
 	# Free the memory pointed by this pointer
 	fun free `{ free(recv); `}
+
+	private fun address: Int is extern "(long)"
+
+	redef fun hash do return address
+	redef fun ==(o) do return o isa Pointer and o.address == address
 end
