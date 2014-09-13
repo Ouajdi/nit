@@ -129,7 +129,17 @@ redef class MVirtualType
 end
 
 redef class MGenericType
-	redef fun cname do return mangled_cname
+	redef fun cname
+	do
+		if mclass.kind == extern_kind then
+			var ctype = mclass.ctype
+			assert ctype != null
+			return ctype
+		end
+
+		return mangled_cname
+	end
+
 	redef fun mangled_cname
 	do
 		var base = super

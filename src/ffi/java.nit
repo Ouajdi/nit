@@ -50,9 +50,9 @@ class JavaLanguage
 		var java_file = mmodule.java_file
 		assert java_file != null
 
-		var mclass_type = m.parent.as(AClassdef).mclass.mclass_type
 		var mmethodef = m.mpropdef
 		var mproperty = m.mpropdef.mproperty
+		var mclass_type = mmethodef.mclassdef.bound_mtype
 
 		# C function calling the Java method through JNI
 		var fc = new ExternCFunction(m, mmodule)
@@ -92,6 +92,7 @@ class JavaLanguage
 
 		# Call the C Java implementation method from C
 		var signature = mmethodef.msignature
+		signature = signature.resolve_for(mclass_type, mclass_type, mmodule, true)
 		assert signature != null
 
 		var jni_signature_alt
@@ -586,6 +587,7 @@ redef class MMethod
 		suffix: nullable String, length: SignatureLength, call_context: CallContext): String
 	do
 		var mmethoddef = lookup_first_definition(from_mmodule, recv_mtype)
+		recv_mtype = mmethoddef.mclassdef.bound_mtype
 		var signature = mmethoddef.msignature
 		assert signature != null
 
