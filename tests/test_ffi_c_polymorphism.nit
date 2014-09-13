@@ -34,6 +34,7 @@ end
 class A
 	type NATIVE: NativeA
 	var native: NATIVE
+	fun get_new_native: NATIVE `{ return NULL; `}
 end
 
 class B
@@ -56,3 +57,6 @@ var c = new B(new NativeB)
 #alt1# var d = new B(new NativeA)
 a.native = new NativeB
 #alt2# c.native = new NativeA
+
+a.get_new_native.foo
+c.get_new_native.foo
