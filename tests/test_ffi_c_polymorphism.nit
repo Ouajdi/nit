@@ -59,4 +59,4 @@ a.native = new NativeB
 #alt2# c.native = new NativeA
 
 a.get_new_native.foo
-c.get_new_native.foo
+b.get_new_native.foo
