@@ -1029,7 +1029,9 @@ class SeparateCompilerVisitor
 		if mtype isa MClassType and mtype.mclass.kind == extern_kind and
 		   mtype.mclass.name != "NativeString" then
 			var valtype = compiler.mainmodule.pointer_type
-			var res = self.new_var(mtype)
+			var res = self.init_instance(mtype)
+			#new_expr("NEW_{mtype.mclass.c_name}({recv_type_info}->resolution_table->types[{mtype.const_color}])", mtype)
+			#var res = self.new_var(mtype)
 			if compiler.runtime_type_analysis != null and not compiler.runtime_type_analysis.live_types.has(value.mtype.as(MClassType)) then
 				self.add("/*no boxing of {value.mtype}: {value.mtype} is not live! */")
 				self.add("PRINT_ERROR(\"Dead code executed!\\n\"); show_backtrace(1);")
@@ -1037,12 +1039,25 @@ class SeparateCompilerVisitor
 			end
 			self.require_declaration("BOX_{valtype.c_name}")
 			self.add("{res} = BOX_{valtype.c_name}({value}); /* boxing {value.mtype} */")
-			self.require_declaration("type_{mtype.c_name}")
-			self.add("{res}->type = &type_{mtype.c_name};")
+			#if mtype isa MGenericType then
 			if mtype isa MGenericType then
+				if mtype.need_anchor then
+					hardening_live_open_type(mtype)
+					link_unresolved_type(self.frame.mpropdef.mclassdef, mtype)
+					var recv = self.frame.arguments.first
+					var recv_type_info = self.type_info(recv)
+					self.add "{res}->type = {recv_type_info}->resolution_table->types[{mtype.const_color}];"
+				else
+					self.add("{res}->type = &type_{mtype.c_name};")
+				end
+				#self.require_declaration(mtype.const_color)
+
 				self.require_declaration("class_{mtype.mclass.c_name}")
+				self.add("printf(\"box class {mtype.mclass.c_name} type {mtype.c_name}\\n\");")
 				self.add("{res}->class = &class_{mtype.mclass.c_name};")
 			else
+				self.require_declaration("type_{mtype.c_name}")
+				self.add("{res}->type = &type_{mtype.c_name};")
 				self.require_declaration("class_{mtype.c_name}")
 				self.add("{res}->class = &class_{mtype.c_name};")
 			end
@@ -1106,7 +1121,7 @@ class SeparateCompilerVisitor
 		return table_send(mmethod, arguments, mmethod.const_color)
 	end
 
-	# Handel common special cases before doing the effective method invocation
+	# Handle common special cases before doing the effective method invocation
 	# This methods handle the `==` and `!=` methods and the case of the null receiver.
 	# Note: a { is open in the generated C, that enclose and protect the effective method invocation.
 	# Client must not forget to close the } after them.

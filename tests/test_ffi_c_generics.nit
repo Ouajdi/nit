@@ -43,6 +43,7 @@ print((new PInt(3333)).to_i)
 var ints = new CArray[PInt].malloc(2)
 ints[0] = new PInt(11111)
 ints[1] = new PInt(22222)
+print ints.class_name
 print ints[0].class_name
 print ints[0].to_i
 print ints[1].to_i

@@ -193,6 +193,7 @@ redef class AMethPropdef
 				v.add("ret_var = {externname}({arguments_for_c.join(", ")});")
 				v.add("{recv_var} = ret_var->value;")
 			end
+			#recv_var = nitni_visitor.init_instance(recv_mtype)
 			recv_var = v.box_extern(recv_var, return_mtype)
 			v.ret(recv_var)
 		end
@@ -209,11 +210,11 @@ redef class AMethPropdef
 		var mmodule = mpropdef.mclassdef.mmodule
 		mmodule.uses_ffi = true
 
-		var mclass_type = mpropdef.mclassdef.bound_mtype
+		#var mclass_type = mpropdef.mclassdef.bound_mtype
 
 		var externname = mpropdef.mproperty.build_cname(mpropdef.mclassdef.bound_mtype, mmodule, "___impl", long_signature)
 		var return_mtype = arguments.first.mtype
-		var recv_var = v.new_var(return_mtype)
+		var recv_var = arguments.first #v.init_instance(#new_var(return_mtype)
 
 		v.adapt_signature(mpropdef, arguments)
 		v.unbox_signature_extern(mpropdef, arguments)
@@ -225,7 +226,7 @@ redef class AMethPropdef
 			var arg = arguments[a]
 			var param_mtype: MType
 			param_mtype = mpropdef.msignature.mparameters[a].mtype
-			param_mtype = param_mtype.anchor_to(mmodule, mclass_type)
+			param_mtype = param_mtype.anchor_to(mmodule, return_mtype.as(MClassType))
 
 			if param_mtype.is_cprimitive then
 				arguments_for_c.add(arg.name)
@@ -237,14 +238,11 @@ redef class AMethPropdef
 			end
 		end
 
-		if return_mtype.is_cprimitive then
-			v.add("{recv_var} = {externname}({arguments_for_c.join(", ")});")
-		else
-			v.add("struct nitni_instance* ret_var;")
-			v.add("ret_var = {externname}({arguments_for_c.join(", ")});")
-			v.add("{recv_var} = ret_var->value;")
-		end
-		recv_var = v.box_extern(recv_var, return_mtype)
+		v.add "void *new_from_c = {externname}({arguments_for_c.join(", ")});"
+
+		v.add "printf(\"exinit {return_mtype.c_name}\\n\");"
+		v.add "((struct instance_kernel__Pointer*){recv_var})->value = new_from_c;"
+		#recv_var = v.box_extern(recv_var, return_mtype)
 		v.ret(recv_var)
 
 		compile_ffi_support_to_c(v)
