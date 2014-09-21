@@ -91,6 +91,10 @@ extern class InnerAndroidMotionEvent in "C" `{AInputEvent *`}
 	`}
 
 	private fun action: AMotionEventAction `{ return AMotionEvent_getAction(recv); `}
+
+	private fun native_down_time: Int `{
+		return AMotionEvent_getDownTime(recv);
+	`}
 end
 
 extern class AMotionEventAction `{ int32_t `}
@@ -144,6 +148,10 @@ class AndroidMotionEvent
 			return null
 		end
 	end
+
+	# Get the time when the user originally pressed down to start a stream of
+ 	# position events, in the java.lang.System.nanoTime() time base.
+	fun down_time: Int do return inner_event.native_down_time
 end
 
 class AndroidPointerEvent
@@ -151,21 +159,26 @@ class AndroidPointerEvent
 	super AndroidInputEvent
 
 	protected var motion_event: AndroidMotionEvent
-	protected var pointer_id: Int
+	protected var pointer_index: Int
 
-	redef fun x: Float do return extern_x(motion_event.inner_event, pointer_id)
-	private fun extern_x(motion_event: InnerAndroidMotionEvent, pointer_id: Int): Float is extern `{
-		return ((int) AMotionEvent_getX(motion_event, pointer_id));
+	redef fun x: Float do return extern_x(motion_event.inner_event, pointer_index)
+	private fun extern_x(motion_event: InnerAndroidMotionEvent, pointer_index: Int): Float is extern `{
+		return ((int) AMotionEvent_getX(motion_event, pointer_index));
 	`}
 
-	redef fun y: Float do return extern_y(motion_event.inner_event, pointer_id)
-	private fun extern_y(motion_event: InnerAndroidMotionEvent, pointer_id: Int): Float is extern `{
-		return ((int) AMotionEvent_getY(motion_event, pointer_id));
+	redef fun y: Float do return extern_y(motion_event.inner_event, pointer_index)
+	private fun extern_y(motion_event: InnerAndroidMotionEvent, pointer_index: Int): Float is extern `{
+		return ((int) AMotionEvent_getY(motion_event, pointer_index));
 	`}
 
-	fun pressure: Float do return extern_pressure(motion_event.inner_event, pointer_id)
-	private fun extern_pressure(motion_event: InnerAndroidMotionEvent, pointer_id: Int): Float is extern `{
-		return AMotionEvent_getPressure(motion_event, pointer_id);
+	# Get the current pressure of this event for the given pointer index
+	#
+	# The pressure generally ranges from 0 (no pressure at all) to 1 (normal pressure),
+	# although values higher than 1 may be generated depending on the calibration of
+	# the input device.
+	fun pressure: Float do return extern_pressure(motion_event.inner_event, pointer_index)
+	private fun extern_pressure(motion_event: InnerAndroidMotionEvent, pointer_index: Int): Float is extern `{
+		return AMotionEvent_getPressure(motion_event, pointer_index);
 	`}
 
 	redef fun pressed
@@ -175,6 +188,17 @@ class AndroidPointerEvent
 	end
 
 	redef fun depressed do return not pressed
+
+	# Get the pointer identifier associated with a particular pointer data index is this event
+	#
+	# The identifier tells you the actual pointer
+ 	# number associated with the data, accounting for individual pointers
+ 	# going up and down since the start of the current gesture.
+	fun id: Int do return native_id(motion_event.inner_event, pointer_index)
+
+	private fun native_id(motion_event: InnerAndroidMotionEvent, pointer_index: Int): Int `{
+		return AMotionEvent_getPointerId(motion_event, pointer_index);
+	`}
 end
 
 extern class AndroidKeyEvent in "C" `{AInputEvent *`}
