@@ -18,6 +18,7 @@
 module opengles1 is pkgconfig("glesv1_cm", "egl")
 
 import mnit_display
+import colors
 
 in "C header" `{
 	#include <EGL/egl.h>
@@ -426,7 +427,10 @@ class Opengles1Display
 	# Set the current color applied to all drawing
 	#
 	# require: r, g, b, a in [0.0 .. 1.0]
+	# TODO rename to `native_color`
 	fun color(r, g, b, a: Float) `{ glColor4f(r, g, b, a); `}
+
+	fun color2(color: Color) do self.color(color.r, color.g, color.b, color.a)
 
 	# Reset the current color to opaque white
 	fun reset_color `{ glColor4f(1.0f, 1.0f, 1.0f, 1.0f); `}
