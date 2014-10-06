@@ -93,7 +93,7 @@ class HttpRequest
 		return null
 	end
 
-	private fun fill_args_from_query(query: String)
+	private fun fill_get_from_string(query: String)
 	do
 		var query_strings = new HashMap[String, String]
 		var get_args = query.split_with("&")
@@ -168,7 +168,7 @@ class HttpRequestParser
 			http_request.query_string = first_line[1].substring_from(first_line[1].index_of('?')+1)
 
 			if http_request.url.has('?') then
-				http_request.fill_args_from_query(http_request.query_string)
+				http_request.fill_get_from_string(http_request.query_string)
 			end
 		else
 			http_request.uri = first_line[1]
