@@ -57,6 +57,21 @@ class HttpRequest
 
 	# The arguments passed with the POST or GET method (with a priority on POST)
 	var all_args = new HashMap[String, String]
+
+	private fun fill_args_from_query(query: String)
+	do
+		var query_strings = new HashMap[String, String]
+		var get_args = query.split_with("&")
+
+		for arg in get_args do
+			var key_value = arg.split_with("=")
+			if key_value.length < 2 then continue
+			query_strings[key_value[0]] = key_value[1]
+		end
+
+		self.get_args = query_strings
+		self.all_args.recover_with query_strings
+	end
 end
 
 # Utility class to parse a request string and build a `HttpRequest`
@@ -74,8 +89,6 @@ class HttpRequestParser
 
 	# Words of the first line
 	private var first_line = new Array[String]
-
-	init do end
 
 	fun parse_http_request(full_request: String): nullable HttpRequest
 	do
@@ -100,9 +113,9 @@ class HttpRequestParser
 			http_request.uri = first_line[1].substring(0, first_line[1].index_of('?'))
 			http_request.query_string = first_line[1].substring_from(first_line[1].index_of('?')+1)
 
-			var parse_url = parse_url
-			http_request.get_args = parse_url
-			http_request.all_args.recover_with parse_url
+			if http_request.url.has('?') then
+				http_request.fill_args_from_query(http_request.query_string)
+			end
 		else
 			http_request.uri = first_line[1]
 		end
@@ -194,22 +207,5 @@ class HttpRequestParser
 		end
 
 		return true
-	end
-
-	# Extract args from the URL
-	private fun parse_url: HashMap[String, String]
-	do
-		var query_strings = new HashMap[String, String]
-
-		if http_request.url.has('?') then
-			var get_args = http_request.query_string.split_with("&")
-			for param in get_args do
-				var key_value = param.split_with("=")
-				if key_value.length < 2 then continue
-				query_strings[key_value[0]] = key_value[1]
-			end
-		end
-
-		return query_strings
 	end
 end
