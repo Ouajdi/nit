@@ -107,6 +107,25 @@ class HttpRequest
 		self.get_args = query_strings
 		self.all_args.recover_with query_strings
 	end
+
+	private fun fill_post_from_string(content: String)
+	do
+		var lines = content.split_with('&')
+		for line in lines do if not line.trim.is_empty then
+			var parts = line.split_once_on('=')
+			if parts.length > 1 then
+				var decoded = parts[1].replace('+', " ").from_percent_encoding
+				if decoded == null then
+					print "decode error"
+					continue
+				end
+				self.post_args[parts[0]] = decoded
+				self.all_args[parts[0]] = decoded
+			else
+				print "POST Error: {line} format error on {line}"
+			end
+		end
+	end
 end
 
 # Utility class to parse a request string and build a `HttpRequest`
@@ -157,17 +176,7 @@ class HttpRequestParser
 
 		# POST args
 		if http_request.method == "POST" then
-			var lines = body.split_with('&')
-			for line in lines do if not line.trim.is_empty then
-				var parts = line.split_once_on('=')
-				if parts.length > 1 then
-					var decoded = parts[1].replace('+', " ").from_percent_encoding
-					http_request.post_args[parts[0]] = decoded
-					http_request.all_args[parts[0]] = decoded
-				else
-					print "POST Error: {line} format error on {line}"
-				end
-			end
+			http_request.fill_post_from_string body
 		end
 
 		# Headers
