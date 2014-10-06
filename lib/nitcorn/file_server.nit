@@ -97,6 +97,8 @@ class FileServer
 						index_file = local_file.join_path("index.htm")
 						if index_file.file_exists then local_file = index_file
 					end
+					# TODO else if local_file.file_stat.is_executable then
+					# OR cgi extensions.has(extension)
 				end
 
 				response = new HttpResponse(200)

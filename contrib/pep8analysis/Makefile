@@ -13,4 +13,8 @@ www/pep8analysis.js:
 	mkdir -p www/samples
 	cp tests/micro/*.pep tests/privat/02-fibo.pep tests/privat/06-calc-non-pur.pep www/samples
 
+cgi:
+	../../bin/nitg -o bin/cgi src/pep8analysis_cgi.nit
+	sudo cp bin/cgi /usr/lib/cgi-bin/pep8.cgi
+
 .PHONY: bin/pep8analysis tests doc/index.html www/pep8analysis.js
