@@ -65,7 +65,7 @@ class HttpServer
 		if virtual_host == null then virtual_host = factory.config.default_virtual_host
 
 		# Get a response from the virtual host
-		var response
+		var response_s
 		if virtual_host != null then
 			var route = virtual_host.routes[request.uri]
 			if route != null then
@@ -75,12 +75,12 @@ class HttpServer
 				if root != null then
 					turi = ("/" + request.uri.substring_from(root.length)).simplify_path
 				else turi = request.uri
-				response = handler.answer(request, turi)
-			else response = new HttpResponse(405)
-		else response = new HttpResponse(405)
+				response_s = handler.answer_string(request, turi)
+			else response_s = (new HttpResponse(405)).to_s
+		else response_s = (new HttpResponse(405)).to_s
 
 		# Send back a response
-		write response.to_s
+		write response_s
 		close
 	end
 end
@@ -94,6 +94,8 @@ redef abstract class Action
 	# `truncated_uri` is the ending of the fulle request URI, truncated from the route
 	# leading to this `Action`.
 	fun answer(request: HttpRequest, truncated_uri: String): HttpResponse is abstract
+
+	fun answer_string(request: HttpRequest, truncated_uri: String): String do return answer(request, truncated_uri).to_s
 end
 
 # Factory to create `HttpServer` instances, and hold the libevent base handler
