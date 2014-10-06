@@ -71,34 +71,26 @@
 		function exec() {
 			$("#working").show()
 			$("#consolePanel").hide()
-
-			// Clean output console
-			$("#console").text("")
+			$("#analyze").prop('disabled', true)
 
 			// Get code
-			var input = editor.getValue()
+			var code = editor.getValue()
 
 			// Update GA stats
 			_gaq.push(['_trackEvent', 'Action', 'Analyze'])
 
-			// Invoke the full Nit program
-			if(typeof(Worker) !== "undefined") {
-				// Async version
-				$("#analyze").prop('disabled', true)
-				worker.postMessage(input)
-			} else {
-				// Sync version
-				_gaq.push(['_trackEvent', 'Bug', 'No Webworkers', $("#console").text()])
-				Module = Pep8Module
-				try {
-					run_analysis = Module.cwrap('pep8analysis_web___NativeString_run_analysis', null, ['string'])
-					run_analysis(input)
-
-					complete()
-				} catch(e) {
-					exception(e)
-				}
-			}
+			// Invoke pep8analysis CGI
+			$.ajax({
+				url: "cgi-bin/pep8.cgi",
+				type: "POST",
+				data: {program: code}, 
+				context: document.body
+			}).done(function(data){
+				obj = JSON.parse(data)
+				$("#console").html(obj.results.join("<br>\n") + "<br>")
+				complete()
+				show_graph(obj.graph)
+			});
 		}
 
 		function load(file) {
@@ -148,7 +140,7 @@
 </nav>
 
 <div class="container-fluid">
-	<div class="alert alert-warning" id="loading">Loading the tool... This may take some time.</div>
+	<div class="alert alert-warning" id="loading" style="display: none;">Loading the tool... This may take some time.</div>
 	<div class="alert alert-danger" id="fatal-error" style="display: none;">
 		<h2>The JavaScript tool crashed</h2>
 		<p>Please refresh the page to try again, or use Firefox. An error report has been sent to the developer</p>
@@ -180,7 +172,7 @@
 				</script>
 
 				<div class="btn-group">
-				  <button type="button" class="btn btn-default" id="analyze" onclick="exec();" disabled>Analyze program</button>
+				  <button type="button" class="btn btn-default" id="analyze" onclick="exec();">Analyze program</button>
 				  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
 					 <span class="glyphicon glyphicon-folder-open"></span>
 					Load sample program
