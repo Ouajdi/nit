@@ -43,6 +43,8 @@ redef class App
 	do
 		super
 		screen = new Screen(self, display.as(Display))
+		#var manager = audio_manager
+		#manager.manage_audio_mode
 	end
 
 	redef fun frame_core(display)
@@ -56,7 +58,7 @@ redef class App
 
 	redef fun input(ie)
 	do	
-		if ie isa QuitEvent then 
+		if ie isa QuitEvent or (ie isa AndroidKeyEvent and ie.is_back_key) then 
 			quit = true
 			return true
 		end

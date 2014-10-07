@@ -19,7 +19,9 @@
 # You can get a sound by loading it with a `SoundPool` or a `MediaPlayer`
 # the recommended way to load a sound is by it's resource ID or it's name
 # other ways are for advanced use
-module audio
+module audio is
+		android_manifest("""<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />""")
+end
 
 import java
 import java::io
