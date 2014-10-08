@@ -226,8 +226,8 @@ class Game
 	
 	#sounds
 	var sound_pool: SoundPool
-	var aom_sounds: SoundPool
-	#var music: MediaPlayer
+	# var aom_sounds: SoundPool
+	# var music: MediaPlayer
 	var walld_sound: Sound
 	var bounce_sound: Sound
 
@@ -257,16 +257,24 @@ class Game
 
 
 		# walld_sound = sound_pool.load_id(app.native_activity, app.resource_manager.raw_id("walld"))
-		walld_sound = app.load_sound_from_res("walld.wav")
-
-		# bounce_sound = sound_pool.load_id(app.native_activity, app.resource_manager.raw_id("bounce"))
-		bounce_sound = app.load_sound_from_res("bounce.ogg")
+		walld_sound = app.load_sound_from_res("walld")
+		# !!! fonctionne mais hacked
+		# walld_sound = sound_pool.load_id(app.native_activity, get_walld_sound)
+		# walld_sound = app.load_sound("walld")
+		
+		
+		#bounce_sound = sound_pool.load_id(app.native_activity, app.resource_manager.raw_id("bounce"))
+		# bounce_sound = app.load_sound_from_res("bounce")
 
 		# TODO: find a good music
 		# music = new MediaPlayer.id(app.native_activity, app.resource_manager.raw_id("music"))
 		# music.looping = true
 		# music.start
 	end
+
+	fun get_walld_sound: Int in "Java" `{
+		return org.nitlanguage.ballz_android.R.raw.walld;
+	`}
 
 	fun do_turn
 	do

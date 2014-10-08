@@ -179,7 +179,10 @@ extern class NativeResources in "Java" `{ android.content.res.Resources `}
 	fun get_boolean(id: Int): Bool in "Java" `{ return recv.getBoolean((int)id); `}
 	fun get_dimension(id: Int): Int in "Java" `{ return (int)recv.getDimension((int)id); `}
 	fun get_drawable(id: Int): NativeDrawable in "Java" `{ return recv.getDrawable((int)id); `}
-	fun get_identifier(name, def_type, def_package: JavaString): Int in "Java" `{ return recv.getIdentifier(name, def_type, def_package); `}
+	fun get_identifier(name, def_type, def_package: JavaString): Int in "Java" `{
+	//return recv.getIdentifier(name, def_type, def_package); 
+	return 10;
+	`}
 	fun get_integer(id: Int): Int in "Java" `{ return recv.getInteger((int)id); `}
 	fun get_string(id: Int): JavaString in "Java" `{ return recv.getString((int)id); `}
 	fun get_resource_entry_name(resid: Int): JavaString in "Java" `{ return recv.getResourceEntryName((int)resid); `}
@@ -248,7 +251,9 @@ class ResourcesManager
 	# you may use this to retrieve the id of a sound for example
 	fun raw_id(name: String): Int do
 		sys.jni_env.push_local_frame(3)
+		print "####################################### before get_identifier #######################################"
 		var return_value = android_resources.get_identifier(name.to_java_string, "raw".to_java_string, app_package.to_java_string)
+		print " ##########################################  RETURN VALUE  " + return_value.to_s + "################################################"
 		sys.jni_env.pop_local_frame
 		return return_value
 	end
