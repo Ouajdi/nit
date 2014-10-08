@@ -258,6 +258,8 @@ $(call import-module,android/native_app_glue)
     <string name="app_name">{{{app_name}}}</string>
 </resources>""".write_to_file "{dir}/res/values/strings.xml"
 		end
+
+		#~/sdks/android-sdk/build-tools/19.1.0/aapt package -m -J gen/ -S res -M AndroidManifest.xml -I ~/sdks/android-sdk/platforms/android-19/android.jar
 	end
 
 	redef fun write_makefile(compiler, compile_dir, cfiles)
