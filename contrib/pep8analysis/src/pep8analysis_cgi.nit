@@ -69,7 +69,7 @@ redef class AnalysisManager
 		clear
 	end
 
-	fun show_graph(content: String) do sys.graph = content
+	fun show_graph(content: String) do sys.graph = content.escape_to_c
 end
 
 class StringIStream
@@ -119,7 +119,7 @@ end
 var object = """
 {
 	"results": ["{{{sys.lines.join("\", \"")}}}"],
-	"graph": "asdf"
+	"graph": "nothing"
 }"""
 #{{{json_graph}}}
 
