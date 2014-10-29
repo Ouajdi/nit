@@ -182,6 +182,14 @@ class Node
 			end
 		end
 	end
+
+	# Find the closest node accepted by `cond` under `max_cost`
+	fun find_closest(max_cost: Int, context: PathContext, cond: nullable TargetCondition[N]): nullable N
+	do
+		var path = path_to_alts(null, max_cost, context, cond)
+		if path == null then return null
+		return path.nodes.last
+	end
 end
 
 # Link between two nodes and associated to a graph
