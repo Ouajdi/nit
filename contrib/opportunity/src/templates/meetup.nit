@@ -35,7 +35,10 @@ class OpportunityMeetupPage
 
 	init do
 		header.page_js = """
-		function change_answer(ele){
+		function change_answer(ele, id){
+			// modify only the currently selected entry
+			if (in_modification_id != id) return;
+
 			var e = document.getElementById(ele.id);
 			var i = e.innerHTML;
 			var ans = true;
@@ -107,7 +110,7 @@ class OpportunityMeetupPage
 		function remove_people(ele){
 			var arr = ele.id.split("_")
 			var pid = arr[1]
-			$('#' + ele.id).parent().remove();
+			$('#' + ele.id).parent().parent().parent().remove();
 			$.ajax({
 				type: "POST",
 				url: "./rest/people",
@@ -117,9 +120,20 @@ class OpportunityMeetupPage
 				}
 			});
 		}
+		var in_modification_id = null;
+		function modify_people(ele, id){
+			if (in_modification_id != null) {
+				$('#modify_'+in_modification_id).text("Modify");
+			}
+			if (in_modification_id != id) {
+				$('#modify_'+id).text("Done");
+				in_modification_id = id;
+			} else {
+				in_modification_id = null;
+			}
+		}
 		"""
 	end
-
 
 	redef fun rendering do
 		if meetup == null then
@@ -168,13 +182,13 @@ redef class Meetup
 			t.add i.to_s
 			t.add "</td>"
 			for j,k in i.answers do
-				t.add """<td class="answer" onclick="change_answer(this)" id="answer_{{{j.id}}}_{{{i.id}}}""""
+				var color
 				if k then
-					t.add " style=\"color:green;\""
-				else
-					t.add " style=\"color:red;\""
-				end
-				t.add"><center>"
+					color = "green"
+				else color = "red"
+
+				t.add """<td class="answer" onclick="change_answer(this, {{{i.id}}})" id="answer_{{{j.id}}}_{{{i.id}}}" style="color:{{{color}}}">"""
+				t.add "<center>"
 				if k then
 					t.add "✔"
 				else
@@ -182,7 +196,8 @@ redef class Meetup
 				end
 				t.add "</center></td>"
 			end
-			t.add """<td class="opportunity-action" style="color: red;" onclick="remove_people(this)" id="remove_{{{i.id}}}"><center><button class="btn btn-xs btn-danger" type="button">Remove</button></center></td>"""
+			t.add """<td class="opportunity-action"><center><button class="btn btn-xs btn-warning" type="button" onclick="modify_people(this, {{{i.id}}})" id="modify_{{{i.id}}}">Modify</button>&nbsp;"""
+			t.add """<button class="btn btn-xs btn-danger" type="button" onclick="remove_people(this)" id="delete_{{{i.id}}}">Remove</button></center></td>"""
 			t.add "</tr>"
 		end
 		t.add """
