@@ -62,19 +62,66 @@ class BenitluxDocument
 
 <div class="panel panel-default">
   <div class="panel-body">
-	<p>Service de diffusion des changements au menu de l'excellente
-	<a href="http://www.brasseriebenelux.com/">Brasserie Bénélux</a>
-	sur la rue Sherbrooke. La liste est mise à jours tous les jours à 14h,
-	le courriel est envoyé au même moment.</p>
-	<form class="form-inline text-center" role="form" method="POST">
+	<p>Service non-officiel de diffusion du menu de l'excellente
+	<a href="http://www.brasseriebenelux.com/">Brasserie Bénélux</a>.</p>
+	<form class="form text-center" role="form" method="POST">
 	  <div class="form-group">
 		<div class="input-group">
 		  <div class="input-group-addon">@</div>
-		  <input class="form-control" type="email" name="email" placeholder="Enter email">
+		  <input class="form-control" type="email" name="email" placeholder="Votre courriel">
+		  <span class="input-group-btn">
+		    <button class="btn btn-primary" type="button" name="sub">S'inscrire ou se réinscrire</button>
+		    <button class="btn btn-default" type="button" name="unsub">Se désinscrire</button>
+		  </span>
 		</div>
 	  </div>
-	  <button type="submit" class="btn btn-default" name="sub">S'inscrire</button>
-	  <button type="submit" class="btn btn-default" name="unsub">Se désinscrire</button>
+	  <div class="row">
+      <div class="col-xs-6">
+      <div class="input-group col-xs-12">
+	  <div class="well well-sm">
+	    <div class="panel-body text-left">
+		<h4>Fréquence des courriels</h2>
+	    <div class="checkbox">
+	      <label>
+	        <input type="checkbox" value="freq-jour"> un courriel par jour
+	      </label>
+	    </div>
+	    <div class="checkbox">
+	      <label>
+	        <input type="checkbox" value="freq-hebdo" checked> un courriel par semaine, le jeudi
+	      </label>
+	    </div>
+	    <div class="checkbox">
+	      <label>
+	        <input type="checkbox" value="freq-mod" checked> un courriel lors d'ajouts au menu
+	      </label>
+	    </div>
+	    </div>
+	  </div>
+	  </div>
+	  </div>
+      <div class="col-xs-6">
+      <div class="input-group col-xs-12">
+	  <div class="well well-sm">
+	    <div class="panel-body text-left">
+		<h4>Bars</h2>
+	    <div class="checkbox">
+	      <label>
+	        <input type="checkbox" value="bar-sherbrooke" checked> Sherbrooke
+	      </label>
+	    </div>
+	    <div class="checkbox">
+	      <label>
+	        <input type="checkbox" value="bar-wellington" checked> Wellington
+	      </label>
+	    </div>
+	      <label>&nbsp;
+	      </label>
+	    </div>
+	  </div>
+	  </div>
+	  </div>
+	  </div>
 	</form>
   </div>
 </div>
@@ -93,15 +140,22 @@ class BenitluxDocument
 
 		var sample_email_lines = sample_email_lines
 		if sample_email_lines != null then
-			add """
+			if sample_email_lines.length > 1 then
+				var title = sample_email_lines.first
+				sample_email_lines.remove_at 0
+				add """
 <div class="panel panel-default">
   <div class="panel-heading">Dernier courriel envoyé</div>
-  <ul class="list-group">
-    <li class="list-group-item">
-	{{{sample_email_lines.join("</li><li class=\"list-group-item\">")}}}
+  <div class="panel-body">
+  <ul class="list-unstyled">
+  <li><h4>{{{title}}}</h4></li>
+  <li>
+	{{{sample_email_lines.join("</li ><li>")}}}
 	</li>
   </ul>
+  </div>
 </div>"""
+			end
 		end
 
 		add """
