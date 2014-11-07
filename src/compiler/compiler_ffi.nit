@@ -125,12 +125,12 @@ redef class AMethPropdef
 		end
 
 		# compile callbacks
-		for cb in foreign_callbacks.callbacks do if mainmodule.check_callback_compilation(cb) then
-			cb.compile_extern_callback(v, ccu)
+		for cb in foreign_callbacks.callbacks do
+			cb.compile_extern_callback(v, ccu, mainmodule.check_callback_compilation(cb))
 		end
 
-		for cb in foreign_callbacks.supers do if mainmodule.check_callback_compilation(cb) then
-			cb.compile_extern_callback(v, ccu)
+		for cb in foreign_callbacks.supers do
+			cb.compile_extern_callback(v, ccu, mainmodule.check_callback_compilation(cb))
 		end
 
 		for cb in foreign_callbacks.casts do if mainmodule.check_callback_compilation(cb) then
@@ -364,7 +364,7 @@ redef class MNullableType
 end
 
 redef class MExplicitCall
-	private fun compile_extern_callback(v: AbstractCompilerVisitor, ccu: CCompilationUnit)
+	private fun compile_extern_callback(v: AbstractCompilerVisitor, ccu: CCompilationUnit, compile_implementation_too: Bool)
 	do
 		var mproperty = mproperty
 		assert mproperty isa MMethod
@@ -372,6 +372,8 @@ redef class MExplicitCall
 		# In nitni files, declare internal function as extern
 		var full_friendly_csignature = mproperty.build_csignature(recv_mtype, v.compiler.mainmodule, null, long_signature, internal_call_context)
 		ccu.header_decl.add("extern {full_friendly_csignature};\n")
+
+		if not compile_implementation_too then return
 
 		# Internally, implement internal function
 		var nitni_visitor = v.compiler.new_visitor
@@ -424,7 +426,7 @@ redef class MExplicitCall
 end
 
 redef class MExplicitSuper
-	private fun compile_extern_callback(v: AbstractCompilerVisitor, ccu: CCompilationUnit)
+	private fun compile_extern_callback(v: AbstractCompilerVisitor, ccu: CCompilationUnit, compile_implementation_too: Bool)
 	do
 		var mproperty = from.mproperty
 		assert mproperty isa MMethod
@@ -438,6 +440,8 @@ redef class MExplicitSuper
 		var friendly_cname = mproperty.build_cname(mclass_type, v.compiler.mainmodule, "___super", short_signature)
 		var internal_cname = mproperty.build_cname(mclass_type, v.compiler.mainmodule, "___super", long_signature)
 		ccu.header_decl.add("#define {friendly_cname} {internal_cname}\n")
+
+		if not compile_implementation_too then return
 
 		# Internally, implement internal function
 		var nitni_visitor = v.compiler.new_visitor
