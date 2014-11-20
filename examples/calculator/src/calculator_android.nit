@@ -78,7 +78,7 @@ redef class App
 		context.content_view = layout
 	end
 
-	redef fun clicked(event)
+	redef fun clicked2(event)
 	do
 		var sender = event.sender
 		assert sender isa Button

@@ -57,6 +57,10 @@ extern class AppNitEvent in "Java" `{ Nit_ui$AppNitEvent `}
 	fun position: Int in "Java" `{ return recv.position; `}
 end
 
+class AppEvent
+	var sender: Object
+end
+
 # Java `ConcurrentLinkedQueue` of Nit objects
 extern class JavaConcurrentLinkedQueue in "Java" `{ java.util.concurrent.ConcurrentLinkedQueue<AppNitEvent> `}
 
@@ -295,8 +299,7 @@ end
 extern class NativeButton in "Java" `{ android.widget.Button `}
 	super NativeTextView
 
-	new (context: NativeActivity, queue: JavaConcurrentLinkedQueue, sender_object: Object)
-	in "Java" `{
+	new (context: NativeActivity, queue: JavaConcurrentLinkedQueue, sender_object: Object) import clicked in "Java" `{
 		final ConcurrentLinkedQueue<AppNitEvent> final_queue = queue;
 		final int final_sender_object = sender_object;
 
@@ -304,15 +307,20 @@ extern class NativeButton in "Java" `{ android.widget.Button `}
 			@Override
 			public boolean onTouchEvent(MotionEvent event) {
 				if(event.getAction() == MotionEvent.ACTION_DOWN) {
-					AppNitEvent nit_event = new AppNitEvent();
-					nit_event.sender = final_sender_object;
-					final_queue.add(nit_event);
+					NativeButton_clicked(this, final_sender_object);
 					return true;
 				}
 				return false;
 			}
 		};
 	`}
+
+	# 
+	fun clicked(obj: Object)
+	do
+		print "-------------- CLICK -----------------"
+		app.clicked2(new AppEvent(obj))
+	end
 end
 
 extern class NativeWebView in "Java" `{ android.webkit.WebView `}
@@ -380,6 +388,7 @@ end
 
 interface UICallback
 	fun clicked(sender: AppNitEvent) do end
+	fun clicked2(sender: AppEvent) do end
 end
 
 redef class App
