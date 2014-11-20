@@ -19,6 +19,36 @@ class Color
 	init dark_gray do set(0.33, 0.33, 0.33)
 	init black do set(0, 0, 0)
 
+	# Pinks
+
+	# Reds
+
+	# Oranges
+
+	# Yellow
+
+	# Browns
+
+	# Greens
+
+	init dark_olive_green do set_hex(0x55, 0x6b, 0x2f)
+	init olive do set_hex(0x80, 0x80, 0x00)
+	# ...
+	init green do set_hex(0x00, 0x80, 0x00)
+	init dark_green do set_hex(0x00, 0x64, 0x00)
+
+	# Cyans
+
+	# Blues
+
+	# Purples
+
+	# Whites
+
+	# Grays & blacks
+
+	#init  do set_hex(0x, 0x, 0x)
+
 	init bright_red do set(1, 0, 0)
 	init bright_green do set(0, 1, 0)
 	init bright_blue do set(0, 0, 1)
@@ -67,6 +97,13 @@ class Color
 		self.r = r.to_f
 		self.g = g.to_f
 		self.b = b.to_f
+	end
+
+	private fun set_hex(r, g, b: Numeric)
+	do
+		self.r = r.to_f/256.0
+		self.g = g.to_f/256.0
+		self.b = b.to_f/256.0
 	end
 
 	redef fun hash do return (r*255.0).to_i * 0x01ffff + (g*255.0).to_i * 0x01ff + (b*255.0).to_i
