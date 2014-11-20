@@ -42,7 +42,7 @@ in "Java" `{
 	import java.util.*;
 `}
 
-in "Java in" `{
+in "Java inner" `{
 	static class AppNitEvent {
 		AppNitEvent() {}
 		int sender;
