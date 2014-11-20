@@ -34,9 +34,10 @@ in "C" `{
 	// TODO protect with: #ifdef WITH_LIBGC
 	// We might have to add the next line to gc_chooser.c too, especially
 	// if we get an error like "thread not registered with GC".
+	#ifndef ANDROID
 		#define GC_THREADS
 		#include <gc.h>
-	//#endif
+	#endif
 `}
 
 redef class Sys
@@ -114,10 +115,6 @@ private extern class NativePthread in "C" `{ pthread_t * `}
 		return (nullable_Object)thread_return;
 	`}
 
-	fun cancel: Bool `{
-		return pthread_cancel(*recv);
-	`}
-
 	fun attr: NativePthreadAttr `{
 		pthread_attr_t *pattr = malloc(sizeof(pthread_attr_t));
 		pthread_getattr_np(*recv, pattr);
@@ -192,18 +189,6 @@ private extern class NativePthreadMutexAttr in "C" `{ pthread_mutexattr_t * `}
 	# pthread_mutexattr_setrobust_np
 end
 
-private extern class NativePthreadBarrier in "C" `{ pthread_barrier_t * `}
-	new(count: Int) `{
-		pthread_barrier_t *barrier = malloc(sizeof(pthread_barrier_t));
-		int res = pthread_barrier_init(barrier, NULL, count);
-		return barrier;
-	`}
-
-	fun destroy `{ pthread_barrier_destroy(recv); `}
-
-	fun wait `{ pthread_barrier_wait(recv); `}
-end
-
 private extern class NativePthreadKey in "C" `{ pthread_key_t * `}
 	new `{
 		pthread_key_t *key = malloc(sizeof(pthread_key_t));
@@ -272,14 +257,6 @@ abstract class Thread
 		return r
 	end
 
-	# Cancel the execution of the thread
-	fun cancel
-	do
-		if native == null then return
-		native.cancel
-		native = null
-	end
-
 	redef fun finalize
 	do
 		if native == null then return
@@ -297,9 +274,6 @@ end
 
 # Exit current thread and return `value` to caller of `Thread::join`
 fun exit_thread(value: nullable Object) `{ pthread_exit(value); `}
-
-# Does not return if the running thread is to be cancelled
-fun test_cancel `{ pthread_testcancel(); `}
 
 # Returns the handle to the running `Thread`
 fun thread: Thread
@@ -346,33 +320,6 @@ class Mutex
 
 	# Release this lock, unblocking all callers of `lock`
 	fun unlock do native.unlock
-
-	redef fun finalize
-	do
-		var native = self.native
-		if native != null then
-			native.destroy
-			native.free
-		end
-		self.native = null
-	end
-end
-
-# Barrier synchronization tool
-#
-# Ensures that `count` threads call and block on `wait` before releasing them.
-class Barrier
-	super Finalizable
-
-	# Number of threads that must be waiting for `wait` to unblock
-	var count: Int
-
-	private var native: nullable NativePthreadBarrier is noinit
-
-	init do native = new NativePthreadBarrier(count)
-
-	# Wait at this barrier and block until there are a `count` threads waiting
-	fun wait do native.wait
 
 	redef fun finalize
 	do
