@@ -19,6 +19,8 @@ module ui is min_api_version(14)
 
 import native_app_glue
 
+import pthreads
+
 in "Java" `{
 	import android.app.NativeActivity;
 
