@@ -20,3 +20,4 @@ module sdl2
 import sdl2_base
 import events
 import syswm
+import gl
