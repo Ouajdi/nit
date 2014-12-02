@@ -27,13 +27,11 @@ unset NIT_DIR
 
 # Get the first Java lib available
 shopt -s nullglob
-JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))
+JAVA_HOME=$(dirname $(dirname $(readlink $(which javac))))
 
 paths=`echo $JAVA_HOME/jre/lib/*/{client,server}/`
 paths=($paths)	
 JNI_LIB_PATH=${paths[0]}
-echo $JAVA_HOME
-echo $JNI_LIB_PATH
 shopt -u nullglob
 
 outdir="out"
