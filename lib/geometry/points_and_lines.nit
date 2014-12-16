@@ -31,8 +31,8 @@ end
 class Point[N: Numeric]
 	super IPoint[N]
 
-	redef var x: N
-	redef var y: N
+	redef var x: N is writable
+	redef var y: N is writable
 end
 
 # An abstract 3d point, strongly linked to its implementation `Point3d`
@@ -50,7 +50,12 @@ class Point3d[N: Numeric]
 	super IPoint3d[N]
 	super Point[N]
 
-	redef var z: N
+	redef var z: N is writable
+
+	init from(other: IPoint3d[N])
+	do
+		init(other.x, other.y, other.z)
+	end
 end
 
 # An abstract 2d line segment
@@ -79,7 +84,6 @@ class Line[N: Numeric]
 			point_right = a
 		end
 	end
-
 end
 
 # An abstract 3d line segment
