@@ -86,6 +86,19 @@ class HashMap2[K1, K2, V]
 		end
 		level2[k2] = v
 	end
+
+	fun remove_at(k1: K1, k2: K2)
+	do
+		var level1 = self.level1
+		var level2: HashMap[K2, V]
+		if not level1.has_key(k1) then
+			level2 = new HashMap[K2, V]
+			level1[k1] = level2
+		else
+			level2 = level1[k1]
+		end
+		level2.keys.remove(k2)
+	end
 end
 
 # Simple way to store an `HashMap[K1, HashMap[K2, HashMap[K3, V]]]`
@@ -122,6 +135,19 @@ class HashMap3[K1, K2, K3, V]
 			level2 = level1[k1]
 		end
 		level2[k2, k3] = v
+	end
+
+	fun remove_at(k1: K1, k2: K2, k3: K3)
+	do
+		var level1 = self.level1
+		var level2: HashMap2[K2, K3, V]
+		if not level1.has_key(k1) then
+			level2 = new HashMap2[K2, K3, V]
+			level1[k1] = level2
+		else
+			level2 = level1[k1]
+		end
+		level2.remove_at(k2, k3)
 	end
 end
 
