@@ -250,6 +250,9 @@ extern class SDLImage
 	redef fun width: Int `{ return recv->w; `}
 	redef fun height: Int `{ return recv->h; `}
 
+	fun width0: Int `{ return recv->w; `}
+	fun height0: Int `{ return recv->h; `}
+
 	fun is_ok: Bool do return not address_is_null
 
 	# Returns a reference to the pixels of the texture
