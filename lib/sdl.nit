@@ -20,7 +20,8 @@ module sdl is
 	ldflags(exec("sdl-config", "--libs"), "-lSDL_image -lSDL_ttf")
 end
 
-import mnit_display
+private import mnit_display
+import mnit_input
 import c
 
 in "C header" `{
