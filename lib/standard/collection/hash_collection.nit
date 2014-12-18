@@ -16,7 +16,7 @@ module hash_collection
 import array
 
 # A HashCollection is an array of HashNode[K] indexed by the K hash value
-private abstract class HashCollection[K: Object]
+private abstract class HashCollection[K]
 	type N: HashNode[K]
 
 	var array: nullable NativeArray[nullable N] = null # Used to store items
@@ -35,16 +35,26 @@ private abstract class HashCollection[K: Object]
 	# Return the index of the key k
 	fun index_at(k: K): Int
 	do
-		var i = k.hash % _capacity
+		var hash
+		if k == null then
+			hash = -1
+		else
+			hash = k.hash
+		end
+
+		var i = hash % _capacity
 		if i < 0 then i = - i
 		return i
 	end
 
-	# Return the node assosiated with the key
+	# Return the node associated with the key
 	fun node_at(k: K): nullable N
 	do
 		# cache: `is` is used instead of `==` because it is a faster filter (even if not exact)
-		if k.is_same_instance(_last_accessed_key) then return _last_accessed_node
+		var nil: nullable Object = null # Used to optimize null check on k
+		if nil != k and k.is_same_instance(_last_accessed_key) then
+			return _last_accessed_node
+		end
 
 		var res = node_at_idx(index_at(k), k)
 		_last_accessed_key = k
@@ -52,13 +62,14 @@ private abstract class HashCollection[K: Object]
 		return res
 	end
 
-	# Return the node assosiated with the key (but with the index already known)
+	# Return the node associated with the key (but with the index already known)
 	fun node_at_idx(i: Int, k: K): nullable N
 	do
+		var nil: nullable Object = null # Used to optimize null check on keys
 		var c = _array[i]
 		while c != null do
 			var ck = c._key
-			if ck.is_same_instance(k) or ck == k then # FIXME prefilter because the compiler is not smart enought yet
+			if (nil != ck and ck.is_same_instance(k)) or ck == k then # FIXME prefilter because the compiler is not smart enough yet
 				break
 			end
 			c = c._next_in_bucklet
@@ -190,7 +201,7 @@ private abstract class HashCollection[K: Object]
 	end
 end
 
-private abstract class HashNode[K: Object]
+private abstract class HashNode[K]
 	var key: K
 	type N: HashNode[K]
 	var next_item: nullable N = null
@@ -199,9 +210,20 @@ private abstract class HashNode[K: Object]
 	var next_in_bucklet: nullable N = null
 end
 
-# A map implemented with a hash table.
-# Keys of such a map cannot be null and require a working `hash` method
-class HashMap[K: Object, V]
+# A `Map` implemented with a hash table.
+#
+# ~~~
+# var map = new HashMap[nullable String, Int]
+# map[null] = 0
+# map["one"] = 1
+# map["two"] = 2
+#
+# assert map[null] == 0
+# assert map["one"] == 1
+# assert map.keys.has("two")
+# assert map.values.length == 3
+# ~~~
+class HashMap[K, V]
 	super Map[K, V]
 	super HashCollection[K]
 
@@ -249,7 +271,7 @@ class HashMap[K: Object, V]
 end
 
 # View of the keys of a HashMap
-private class HashMapKeys[K: Object, V]
+private class HashMapKeys[K, V]
 	super RemovableCollection[K]
 	# The original map
 	var map: HashMap[K, V]
@@ -270,7 +292,7 @@ private class HashMapKeys[K: Object, V]
 end
 
 # View of the values of a Map
-private class HashMapValues[K: Object, V]
+private class HashMapValues[K, V]
 	super RemovableCollection[V]
 	# The original map
 	var map: HashMap[K, V]
@@ -340,14 +362,14 @@ private class HashMapValues[K: Object, V]
 	end
 end
 
-private class HashMapNode[K: Object, V]
+private class HashMapNode[K, V]
 	super HashNode[K]
 	redef type N: HashMapNode[K, V]
 	var value: V
 end
 
 # A `MapIterator` over a `HashMap`.
-class HashMapIterator[K: Object, V]
+class HashMapIterator[K, V]
 	super MapIterator[K, V]
 	redef fun is_ok do return _node != null
 

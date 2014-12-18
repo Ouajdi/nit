@@ -514,7 +514,7 @@ end
 
 
 # Associative arrays implemented with an array of (key, value) pairs.
-class ArrayMap[K: Object, E]
+class ArrayMap[K, E]
 	super CoupleMap[K, E]
 
 	# O(n)
@@ -596,7 +596,7 @@ class ArrayMap[K: Object, E]
 	end
 end
 
-private class ArrayMapKeys[K: Object, E]
+private class ArrayMapKeys[K, E]
 	super RemovableCollection[K]
 	# The original map
 	var map: ArrayMap[K, E]
@@ -616,7 +616,7 @@ private class ArrayMapKeys[K: Object, E]
 	redef fun remove_all(key) do self.remove(key)
 end
 
-private class ArrayMapValues[K: Object, E]
+private class ArrayMapValues[K, E]
 	super RemovableCollection[E]
 	# The original map
 	var map: ArrayMap[K, E]
