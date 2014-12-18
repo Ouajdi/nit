@@ -85,6 +85,8 @@ interface KeyEvent
 
 	# Get Char value of key, if any
 	fun to_c: nullable Char is abstract
+
+	fun name: String is abstract
 end
 
 # Mobile hardware (or pseudo hardware) event
