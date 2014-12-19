@@ -150,7 +150,7 @@ LOCAL_CFLAGS	:= -D ANDROID
 LOCAL_MODULE    := main
 LOCAL_SRC_FILES := \\
 {{{cfiles.join(" \\\n")}}}
-LOCAL_LDLIBS    := -llog -landroid -lEGL -lGLESv1_CM -lz
+LOCAL_LDLIBS    := -llog -landroid -lEGL -lGLESv1_CM -lGLESv2 -lz
 LOCAL_STATIC_LIBRARIES := android_native_app_glue png
 
 include $(BUILD_SHARED_LIBRARY)
