@@ -182,6 +182,9 @@ extern class SDLDisplay `{SDL_Surface *`}
 	fun ignore_mouse_motion_events=(val: Bool) `{
 		SDL_EventState(SDL_MOUSEMOTION, val? SDL_IGNORE: SDL_ENABLE);
 	`}
+
+	fun has_mouse_focus: Bool `{ return SDL_GetAppState() & SDL_APPMOUSEFOCUS; `}
+	fun has_input_focus: Bool `{ return SDL_GetAppState() & SDL_APPINPUTFOCUS; `}
 end
 
 # Basic Drawing figures
