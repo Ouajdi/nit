@@ -36,7 +36,7 @@
 module sensors
 
 import android
-import mnit
+import mnit_input
 
 in "C header" `{
 	#include <jni.h>
