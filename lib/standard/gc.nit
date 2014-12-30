@@ -53,8 +53,8 @@ class FinalizableOnce
 	do
 		if finalized then return
 
-		finalize_once
 		finalized = true
+		finalize_once
 	end
 
 	# Real finalization method of `FinalizableOnce`, will be called only once
