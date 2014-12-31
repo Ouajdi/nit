@@ -316,6 +316,8 @@ redef class GammitApp
 	# If `mine` break block, otherwise place a new block on top of selected.
 	fun act(x, y: Int, mine: Bool)
 	do
+		# HACK
+		display.selection_camera = camera.position
 		var selected = display.visible_at(x, y)
 		if selected != null and display.visibles.has(selected) then
 
