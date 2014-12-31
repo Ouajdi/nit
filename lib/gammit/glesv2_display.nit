@@ -322,6 +322,9 @@ class GammitDisplay
 		return selection_map[id]
 	end
 
+	# HACK
+	var selection_camera: IPoint3d[Float] is noinit, writable
+
 	private fun draw_selection_screen
 	do
 		selection_calculated = true
@@ -359,6 +362,12 @@ class GammitDisplay
 			# Acumulate all entries into a vertex arrays
 			# TODO use a VBO
 			for entry in set do if entry isa Selectable then # TODO move up selectable to VisibleMap
+
+				# HACK!
+				if (entry.x - selection_camera.x).to_f.abs > 5.0 or
+				   (entry.y - selection_camera.y).to_f.abs > 5.0 or
+				   (entry.z - selection_camera.z).to_f.abs > 5.0 then continue
+
 				var n_vertices = entry.vertices.length / 3
 
 				var id = next_selection_id
