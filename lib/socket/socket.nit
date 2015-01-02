@@ -62,11 +62,13 @@ class TCPStream
 		socket = new NativeSocket.socket(new NativeSocketAddressFamilies.af_inet,
 			new NativeSocketTypes.sock_stream, new NativeSocketProtocolFamilies.pf_null)
 		if socket.address_is_null then
+			last_error = new IOError("Error opening socket: {sys.errno.strerror}")
 			end_reached = true
 			closed = true
 			return
 		end
 		if not socket.setsockopt(new NativeSocketOptLevels.socket, new NativeSocketOptNames.reuseaddr, 1) then
+			last_error = new IOError("Error setting SO_REUSEADDR: {sys.errno.strerror}")
 			end_reached = true
 			closed = true
 			return
@@ -137,7 +139,9 @@ class TCPStream
 	private fun internal_connect: Bool
 	do
 		assert not closed
-		return socket.connect(addrin) >= 0
+		var success = socket.connect(addrin) >= 0
+		if not success then last_error = new IOError("Connection failed: {sys.errno.strerror}")
+		return success
 	end
 
 	# If socket.end_reached, nothing will happen
@@ -172,6 +176,8 @@ class TCPStream
 		if closed then return
 		if socket.close >= 0 then
 			closed = true
+		else
+			last_error = new IOError("Close failed: {sys.errno.strerror}")
 		end
 	end
 
@@ -181,6 +187,7 @@ class TCPStream
 		if not socket.setsockopt(new NativeSocketOptLevels.tcp, new NativeSocketOptNames.tcp_nodelay, 1) or
 		   not socket.setsockopt(new NativeSocketOptLevels.tcp, new NativeSocketOptNames.tcp_nodelay, 0) then
 			closed = true
+			last_error = new IOError("Flush failed: {sys.errno.strerror}")
 		end
 	end
 end
@@ -193,6 +200,9 @@ class TCPServer
 
 	private var addrin: NativeSocketAddrIn is noinit
 
+	# Last error produced by this socket (if any)
+	var error: nullable Error = null
+
 	# Create and bind a listening server socket on port `port`
 	init
 	do
@@ -200,6 +210,7 @@ class TCPServer
 			new NativeSocketTypes.sock_stream, new NativeSocketProtocolFamilies.pf_null)
 		assert not socket.address_is_null
 		if not socket.setsockopt(new NativeSocketOptLevels.socket, new NativeSocketOptNames.reuseaddr, 1) then
+			error = new Error("Error setting SO_REUSEADDR: {sys.errno.strerror}")
 			closed = true
 			return
 		end
@@ -212,16 +223,20 @@ class TCPServer
 
 	# Associates the socket to a local address and port
 	#
-	# Returns whether the socket has been be bound.
-	private fun bind: Bool do
-		return socket.bind(addrin) >= 0
+	# Sets `error` if this operation encounters an error.
+	private fun bind do
+		var success = socket.bind(addrin) >= 0
+		if not success then error = new Error("Bind failed: {sys.errno.strerror}")
 	end
 
 	# Sets the socket as ready to accept incoming connections, `size` is the maximum number of queued clients
 	#
 	# Returns `true` if the socket could be set, `false` otherwise
-	fun listen(size: Int): Bool do
-		return socket.listen(size) >= 0
+	fun listen(size: Int) do
+		if error != null then return
+
+		var success = socket.listen(size) >= 0
+		if not success then error = new Error("Listen failed: {sys.errno.strerror}")
 	end
 
 	# Accepts an incoming connection from a client
@@ -256,6 +271,8 @@ class TCPServer
 		if closed then return
 		if socket.close >= 0 then
 			closed = true
+		else
+			error = new Error("Close failed: {sys.errno.strerror}")
 		end
 	end
 end
