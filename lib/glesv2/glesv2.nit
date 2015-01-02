@@ -35,6 +35,8 @@ module glesv2 is
 	new_annotation glsl_fragment_shader
 end
 
+intrude import c
+import matrix
 
 in "C Header" `{
 	#include <GLES2/gl2.h>
@@ -287,45 +289,249 @@ extern class GLVertexShader
 	new `{ return glCreateShader(GL_VERTEX_SHADER); `}
 end
 
+# An uniform variable in the shaders of a `GLProgram`
+#
+# Uniform variables are constant across all shader instances in the same
+# draw call.
+class GLUniform
+	# Location of this uniform variable
+	var index: Int
+end
+
+class UniformFloat
+	super GLUniform
+
+	# Default 0.0
+	var x: nullable Float
+	var y: nullable Float
+	var z: nullable Float
+
+	# Default 1.0
+	var w: nullable Float
+
+	init
+	do
+		var x = x or else 0.0
+		var y = y or else 0.0
+		var z = z or else 0.0
+		var w = w or else 1.0
+		native_init(index, x, y, z, w)
+	end
+
+	private fun native_init(index: Int, x, y, z, w: Float) `{
+		glUniform4f(index, x, y, z, w);
+	`}
+end
+
+class UniformInt1
+	super GLUniform
+
+	var x: Int
+
+	init
+	do
+		native_init(index, x)
+	end
+
+	private fun native_init(index, x: Int) `{
+		glUniform1i(index, x);
+	`}
+end
+
+class UniformInt
+	super GLUniform
+
+	# Default 0.0
+	var x: nullable Int
+	var y: nullable Int
+	var z: nullable Int
+
+	# Default 1.0
+	var w: nullable Int
+
+	init
+	do
+		var x = x or else 0
+		var y = y or else 0
+		var z = z or else 0
+		var w = w or else 1
+		native_init(index, x, y, z, w)
+	end
+
+	private fun native_init(index: Int, x, y, z, w: Int) `{
+		glUniform4i(index, x, y, z, w);
+	`}
+end
+
+class UniformMatrix4
+	super GLUniform
+	# TODO super Finalizable
+
+	# Implementation note:
+	#
+	# The `transpose` option must be false in Opengles 2 & 3, so we don't expose it.
+
+	#var count: Int
+
+	var matrix: Matrix[Float]
+
+	var native_matrix_cache: nullable NativeGLfloatMatrix = null
+
+	init
+	do
+		var native = native_matrix_cache
+		if native == null then
+			native = new NativeGLfloatMatrix.alloc
+			self.native_matrix_cache = native
+		end
+
+		matrix.fill_native(native)
+
+		native_init(index, 1, false, native)
+	end
+
+	private fun native_init(index, count: Int, transpose: Bool, data: NativeGLfloatMatrix) `{
+		glUniformMatrix4fv(index, count, transpose, data);
+	`}
+end
+
+# An attribute in the shaders of a `GLProgram`
+#
+# Uniform variables are constant across all shader instances in the same
+# draw call.
+#
+# A single vertex attribute location can be shared by a `ConstantVertexAttribute` and
+# a `VertexArrayAttribute`. If the `VertexArrayAttribute` has priority when enabled,
+# if it is disabled, the shader will use the value of the `ConstantVertexAttribute`.
+abstract class ProgramAttrib
+	var index: Int
+end
+
+# A vertex attribute in the shaders of a `GLProgram`
+#
+# Vertex attributes such as this one are constant across all shader instances
+# in the same draw call.
+class VertexAttrib
+	super ProgramAttrib
+
+	# Default 0.0
+	var x: nullable Float
+	var y: nullable Float
+	var z: nullable Float
+
+	# Default 1.0
+	var w: nullable Float
+
+	init
+	do
+		var x = x or else 0.0
+		var y = y or else 0.0
+		var z = z or else 0.0
+		var w = w or else 1.0
+		native_init(index, x, y, z, w)
+	end
+
+	private fun native_init(index: Int, x, y, z, w: Float) `{
+		glVertexAttrib4f(index, x, y, z, w);
+	`}
+end
+
 # An array of `Float` associated to a program variable
 class VertexArray
-	var index: Int
+	super ProgramAttrib
 
 	# Number of data per vertex
 	var count: Int
 
-	protected var glfloat_array: GLfloatArray
+	protected var glfloat_array: NativeGLfloatArray
 
 	init(index, count: Int, array: Array[Float])
 	do
 		self.index = index
 		self.count = count
-		self.glfloat_array = new GLfloatArray(array)
+		self.glfloat_array = new NativeGLfloatArray(array.length)
+		for k in [0..array.length[ do
+			glfloat_array[k] = array[k]
+		end
 	end
 
 	fun attrib_pointer do attrib_pointer_intern(index, count, glfloat_array)
-	private fun attrib_pointer_intern(index, count: Int, array: GLfloatArray) `{
+	private fun attrib_pointer_intern(index, count: Int, array: NativeGLfloatArray) `{
 		glVertexAttribPointer(index, count, GL_FLOAT, GL_FALSE, 0, array);
 	`}
 
-	fun enable do enable_intern(index)
-	private fun enable_intern(index: Int) `{ glEnableVertexAttribArray(index); `}
+	# Activate this ???
+	fun enable do enable_native(index)
+	private fun enable_native(index: Int) `{ glEnableVertexAttribArray(index); `}
 
-	fun draw_arrays_triangles do draw_arrays_triangles_intern(index, count)
-	private fun draw_arrays_triangles_intern(index, count: Int) `{
-		glDrawArrays(GL_TRIANGLES, index, count);
-	`}
+	# Desactivate this ???
+	fun disable do disable_native(index)
+	private fun disable_native(index: Int) `{ glDisableVertexAttribArray(index); `}
+
+	fun draw_arrays_triangles(from, count: Int) `{ glDrawArrays(GL_TRIANGLES, from, count); `}
+
+	fun draw_arrays_triangle_strip(from, count: Int) `{ glDrawArrays(GL_TRIANGLE_STRIP, from, count); `}
 end
 
-# Low level array of `Float`
-extern class GLfloatArray `{GLfloat *`}
-	new (array: Array[Float]) import Array[Float].length, Array[Float].[] `{
-		int i;
-		int len = Array_of_Float_length(array);
-		GLfloat *vertex_array = malloc(sizeof(GLfloat)*len);
-		for (i = 0; i < len; i ++) vertex_array[i] = Array_of_Float__index(array, i);
-		return vertex_array;
+redef universal Int
+	fun vertex_attrib4f(x, y, z, w: Float) `{
+		glVertexAttrib4f(recv, x, y, z, w);
 	`}
+
+	# `size` is components per vertex
+	fun vertex_attrib_pointer(size: Int, array: NativeGLfloatArray) `{
+		glVertexAttribPointer(recv, size, GL_FLOAT, GL_FALSE, 0, array);
+	`}
+
+	fun enable_vertex_attrib_array `{ glEnableVertexAttribArray(recv); `}
+
+	fun disable_vertex_attrib_array `{ glDisableVertexAttribArray(recv); `}
+
+	fun uniform_1i(index, x: Int) `{ glUniform1i(index, x); `}
+end
+#fun draw_arrays_triangles(from, count: Int) `{ glDrawArrays(GL_TRIANGLES, from, count); `}
+
+#fun draw_arrays_triangle_strip(from, count: Int) `{ glDrawArrays(GL_TRIANGLE_STRIP, from, count); `}
+
+# Low level array of `Float`
+class GLfloatArray
+	super CArray[Float]
+	redef type NATIVE: NativeGLfloatArray
+
+	init(size: Int)
+	is old_style_init do
+		native_array = new NativeGLfloatArray(size)
+		super size
+	end
+
+	new from(array: Array[Float])
+	do
+		var arr = new GLfloatArray(array.length)
+		arr.fill_from array
+		return arr
+	end
+
+	fun fill_from(array: Array[Float])
+	do
+		assert length >= array.length
+		for k in [0..array.length[ do
+			self[k] = array[k]
+		end
+	end
+end
+
+# An array of `int` in C (`int*`)
+extern class NativeGLfloatArray `{ GLfloat* `}
+	super NativeCArray
+	redef type E: Float
+
+	# Initialize a new NativeCIntArray of `size` elements.
+	new(size: Int) `{ return calloc(size, sizeof(GLfloat)); `}
+
+	redef fun [](index) `{ return recv[index]; `}
+	redef fun []=(index, val) `{ recv[index] = val; `}
+
+	redef fun +(offset) `{ return recv + offset; `}
 end
 
 # General type for OpenGL enumerations
@@ -372,6 +578,76 @@ do
 		abort
 	end
 end
+
+# Min at 16 per specification.
+fun max_vertex_attribs: Int do return gl.get_int(0x8864)
+
+# An OpenGL ES 2.0 2D texture
+class GLTexture
+	var id: Int = gen is lazy
+
+	fun gen: Int
+	do
+		var id = gen_native
+		self.id = id
+		return id
+	end
+
+	# Generate a single texture
+	#
+	# TODO optimize with a global texture pool
+	private fun gen_native: Int `{
+		int id;
+		glGenTextures(1, &id);
+		return id;
+	`}
+
+	fun bind do bind_native(id)
+	private fun bind_native(id: Int) `{ glBindTexture(GL_TEXTURE_2D, id); `}
+
+	fun active(offset: Int) `{ glActiveTexture(GL_TEXTURE0 + offset); `}
+
+	new rgby_square
+	do
+		gl_pixel_store_pack_alignement 1 # 1 byte per color
+		var tex = new GLTexture
+		tex.gen
+		tex.bind
+
+		var pixels = [255, 0,   0,
+		              0,   255, 0,
+		              0,   0,   255,
+		              255, 255, 0]
+		var cpixels = new CByteArray.from(pixels)
+
+		gl_tex_image2d(2, 2, cpixels.native_array, false)
+
+		gl.tex_parameter_min_filter(new GLTextureTarget.flat, new GLTextureMinFilter.nearest)
+		gl.tex_parameter_mag_filter(new GLTextureTarget.flat, new GLTextureMagFilter.linear)
+
+		return tex
+	end
+
+	fun delete do delete_native(id)
+	private fun delete_native(id: Int) `{ glDeleteTextures(1, (GLuint*)&id); `}
+end
+
+#
+# Default is 4.
+#
+# Require: `[1, 2, 4, 8].has(val)`
+fun gl_pixel_store_pack_alignement(val: Int) `{ glPixelStorei(GL_PACK_ALIGNMENT, val); `}
+
+#
+#
+# Require: `[1, 2, 4, 8].has(val)`
+fun gl_pixel_store_unpack_alignement(val: Int) `{ glPixelStorei(GL_UNPACK_ALIGNMENT, val); `}
+
+fun gl_tex_image2d(width, height: Int, pixels: NativeCByteArray, has_alpha: Bool) `{
+	int format = has_alpha? GL_RGBA: GL_RGB;
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height,
+		0, format, GL_UNSIGNED_BYTE, pixels);
+`}
 
 # Texture minifying function
 #
@@ -437,6 +713,68 @@ class GLCap
 	redef fun hash do return val
 	redef fun ==(o) do return o != null and is_same_type(o) and o.hash == self.hash
 end
+
+class GLRenderbuffer
+	var id: Int = gen is lazy
+
+	fun gen: Int
+	do
+		var id = gen_native
+		self.id = id
+		return id
+	end
+
+	# Generate a single renderbuffer
+	#
+	# TODO optimize with a global texture pool
+	private fun gen_native: Int `{
+		int id;
+		glGenRenderbuffers(1, &id);
+		return id;
+	`}
+
+	fun bind do bind_native(id)
+	private fun bind_native(id: Int) `{ glBindRenderbuffer(GL_RENDERBUFFER, id); `}
+
+	fun storage(width, height: Int) `{
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
+	`}
+
+	fun attach do attach_native(id)
+	fun attach_native(id: Int) `{
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, id);
+	`}
+end
+
+extern class NativeGLfloatMatrix `{ GLfloat* `}
+
+	new alloc `{ return malloc(4*4*sizeof(GLfloat)); `}
+
+	fun set_identity
+	do
+		for i in 4.times do
+			for j in 4.times do
+				self[i, j] = if i == j then 1.0 else 0.0
+			end
+		end
+	end
+
+	fun [](x, y: Int): Float `{ return recv[y*4+x]; `}
+	fun []=(x, y: Int, val: Float) `{ recv[y*4+x] = val; `}
+end
+
+redef class Matrix[N]
+	# Copy content of this matrix to a `NativeGLfloatMatrix`
+	fun fill_native(native: NativeGLfloatMatrix)
+	do
+		for i in width.times do
+			for j in height.times do
+				native[i, j] = self[i, j].to_f
+			end
+		end
+	end
+end
+
 redef class Sys
 	private var gles = new GLES is lazy
 end
