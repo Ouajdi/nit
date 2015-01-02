@@ -26,8 +26,13 @@ var port = args[0].to_i
 
 # Open the listening socket
 var socket = new TCPServer(port)
+assert socket.error == null else print socket.error.as(not null)
+
 socket.listen 4
+assert socket.error == null else print socket.error.as(not null)
+
 socket.blocking = false
+assert socket.error == null else print socket.error.as(not null)
 
 print "Listening on port {socket.port}"
 
@@ -43,8 +48,16 @@ print " Connected"
 
 # Communicate
 print client.read_line
+assert client.last_error == null else print client.last_error.as(not null)
+
 client.write "Hello client!\n"
+assert client.last_error == null else print client.last_error.as(not null)
+
 print client.read_line
+assert client.last_error == null else print client.last_error.as(not null)
+
 client.write "Bye client!\n"
+assert client.last_error == null else print client.last_error.as(not null)
 
 client.close
+assert client.last_error == null else print client.last_error.as(not null)
