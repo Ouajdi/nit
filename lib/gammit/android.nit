@@ -60,7 +60,7 @@ redef class GammitDisplay
 	redef fun load_texture_from_assets(path)
 	do
 		var asset = app.native_app_glue.ndk_native_activity.load_asset_from_apk(path.to_cstring)
-		assert asset != null
+		assert asset != null else print "asset not found at: {path}"
 
 		var png_texture = asset.to_png_texture
 		assert png_texture != null
@@ -75,7 +75,7 @@ redef class GammitApp
 end
 
 redef class App
-	redef fun extern_input_key(event)
+	redef fun native_input_key(event)
 	do
 		var gammit = gammit
 		if gammit != null then
@@ -85,7 +85,7 @@ redef class App
 		return false
 	end
 
-	redef fun extern_input_motion(event)
+	redef fun native_input_motion(event)
 	do
 		var gammit = gammit
 		if gammit != null then

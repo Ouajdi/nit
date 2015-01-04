@@ -7,18 +7,37 @@ linux:
 	../../../../bin/nitc -o bin/mineit_server src/server.nit
 
 debug:
-	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit
-	adb install -r bin/mineit_vr.apk
+	../../../../bin/nitc -o bin/fbo src/fbo.nit
 
-android:
-	mkdir -p res bin
-	../../../../contrib/inkscape_tools/bin/svg_to_icons art/icon.svg --android --out res/
-	inkscape -f art/android_controls.svg -e assets/android_controls.png -y 0.0
+d:
 	../../../../bin/nitc -o bin/mineit.apk src/android.nit
 	adb install -r bin/mineit.apk
+
+android-release:
+	../../../../bin/nitc -o bin/mineit_vr.apk --release src/android_vr.nit
+
+android:
+	mkdir -p res bin libs
+
+	# Download `cardboard.jar`
+	if [ ! -e libs/cardboard.jar ]; then \
+		curl --progress-bar -o libs/cardboard.jar \
+		https://raw.githubusercontent.com/googlesamples/cardboard-java/master/CardboardSample/libs/cardboard.jar; \
+	fi
+
+	# Export icon and UI images to png files with Inkscape
+	../../../../contrib/inkscape_tools/bin/svg_to_icons art/icon.svg --android --out res/
+	inkscape -f art/android_controls.svg -e assets/android_controls.png -y 0.0
+	inkscape -f art/splash.svg -e assets/splash.png
+
+	# Compile our programs
+	../../../../bin/nitc -o bin/mineit.apk src/android.nit
 	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit
-	adb install -r bin/mineit_vr.apk
 	../../../../bin/nitc -o bin/mineit_vr_multi.apk src/android_vr_multiplayer.nit
+
+	# Install our programs
+	adb install -r bin/mineit.apk
+	adb install -r bin/mineit_vr.apk
 	adb install -r bin/mineit_vr_multi.apk
 
 icon:

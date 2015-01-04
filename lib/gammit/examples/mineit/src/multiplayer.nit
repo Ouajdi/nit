@@ -49,7 +49,7 @@ redef class GammitApp
 	fun player_position_to_json: String
 	do
 		return """{"px": {{{camera.position.x}}}, "py": {{{camera.position.y}}}, """ +
-			""""pz": {{{camera.position.z}}}, "ay": {{{camera.down_up}}}, "ax": {{{camera.left_right}}}}"""
+			""""pz": {{{camera.position.z}}}, "ay": {{{camera.pitch}}}, "ax": {{{camera.yaw}}}}"""
 	end
 
 	fun update_other_players(updates: String)

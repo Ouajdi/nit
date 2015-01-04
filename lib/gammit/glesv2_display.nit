@@ -270,18 +270,18 @@ class GammitDisplay
 				program.projection.value = projection_matrix
 			end
 
-			assert_no_gl_error
+			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
 
 			program.draw(draw_mode, 0, total_vertices/3)
 
-			assert_no_gl_error
+			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
 		end
 
 		# Make selection result as dirty
 		selection_calculated = false
 
 		# Check for lingering errors
-		assert_no_gl_error
+		assert gl.error.is_ok else print "OpenGL error: {gl.error}"
 	end
 
 	# TODO extract the next 4 props to a its own module
@@ -444,8 +444,16 @@ class GammitDisplay
 
 		gl_tex_image2d(width, height, pixels, has_alpha)
 
-		gl.tex_parameter_min_filter(new GLTextureTarget.flat, new GLTextureMinFilter.nearest)
+		gl.tex_parameter_min_filter(new GLTextureTarget.flat, new GLTextureMinFilter.linear_mipmap_linear)
 		gl.tex_parameter_mag_filter(new GLTextureTarget.flat, new GLTextureMagFilter.nearest)
+
+		gl.tex_parameter_wrap_s(new GLTextureTarget.flat, new GLTextureWrap.mirrored_repeat)
+		gl.tex_parameter_wrap_t(new GLTextureTarget.flat, new GLTextureWrap.mirrored_repeat)
+
+		gl.hint_generate_mipmap(new GLHintMode.nicest)
+		gl.generate_mipmap(new GLTextureTarget.flat)
+
+		assert_no_gl_error
 
 		return new GammitGLTexture(gl_tex, width, height)
 	end
@@ -1058,7 +1066,7 @@ end
 class GammitUIProgram
 	super DefaultGammitProgram
 
-	var mvp_matrix: Matrix[Float]
+	var mvp_matrix: Matrix[Float] is writable
 
 	#
 	init

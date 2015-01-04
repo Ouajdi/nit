@@ -781,9 +781,10 @@ class GLRenderbuffer
 
 	# TODO max samples GL_MAX_SAMPLES
 	# TODO format
-	fun storage_multisample(format: GLRenderbufferFormat, samples, width, height: Int) `{
-		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format, width, height);
-	`}
+	# v3
+	#fun storage_multisample(format: GLRenderbufferFormat, samples, width, height: Int) `{
+	#glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format, width, height);
+	#`}
 
 	# Must be `new GLFramebufferTarget`
 	fun attach(target: GLFramebufferTarget, attachment: GLAttachment)

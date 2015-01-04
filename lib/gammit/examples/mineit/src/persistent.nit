@@ -70,8 +70,8 @@ redef class SimpleCamera
     "px": {{{position.x}}},
     "py": {{{position.y}}},
     "pz": {{{position.z}}},
-    "ay": {{{down_up}}},
-    "ax": {{{left_right}}}
+    "ay": {{{pitch}}},
+    "ax": {{{yaw}}}
 }"""
 
 	end
@@ -81,8 +81,8 @@ redef class SimpleCamera
 		self.position.x = json["px"].to_f
 		self.position.y = json["py"].to_f
 		self.position.z = json["pz"].to_f
-		self.down_up = json["ay"].to_f
-		self.left_right = json["ax"].to_f
+		self.pitch = json["ay"].to_f
+		self.yaw = json["ax"].to_f
 	end
 end
 

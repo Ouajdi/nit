@@ -16,6 +16,7 @@
 module android_vr is
 	app_version(0, 5, git_revision)
 	app_name "Mineit VR"
+	java_package "net.xymus.mineit_vr"
 	android_manifest_activity """
 		android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 		android:screenOrientation="landscape""""
@@ -24,6 +25,7 @@ end
 
 import gammit::android
 import ::android::cardboard
+import ::android::gamepad
 
 import vr
 import optimized
@@ -39,11 +41,11 @@ redef class MineitWorld
 end
 
 redef class SimpleCamera
-	# Do not use `roll` and `pitch`, the value will instead come from the Cardboard API
+	# Do not use `yaw` and `pitch`, the value will instead originate from the Cardboard API
 	redef var rotation_matrix = new Matrix[Float].identity(4)
 
 	# Get the angle value from the `rotation_matrix`
-	redef fun down_up
+	redef fun pitch
 	do
 		var a = rotation_matrix[0, 1]
 		var b = rotation_matrix[1, 1]
@@ -51,7 +53,7 @@ redef class SimpleCamera
 	end
 
 	# Get the angle value from the `rotation_matrix`
-	redef fun left_right
+	redef fun yaw
 	do
 		var a = rotation_matrix[2, 0]
 		var b = rotation_matrix[2, 2]
@@ -61,7 +63,7 @@ end
 
 redef class GammitApp
 	# Use Cardboard's head tacking features
-	var head_tracker: NativeHeadTracker
+	var head_tracker: nullable NativeHeadTracker = null
 
 	redef fun setup
 	do
@@ -79,6 +81,7 @@ redef class GammitApp
 	# Do not show any UI
 	redef fun setup_ui do end
 
+	# We reuse this array to get the rotation matrix from the Java library
 	private var java_rotation_matrix = new JavaFloatArray(16) is lazy
 
 	redef fun frame_logic
@@ -86,19 +89,12 @@ redef class GammitApp
 		# Extract rotation matrix from Cardboard
 		head_tracker.last_head_view(java_rotation_matrix, 0)
 
-		# Simple alias for shorter code
-		var t = camera.rotation_matrix
-
-		# Copy interesting values from the Java array to our matrix
-		t[0, 0] = java_rotation_matrix[0]
-		t[0, 1] = java_rotation_matrix[1]
-		t[0, 2] = java_rotation_matrix[2]
-		t[1, 0] = java_rotation_matrix[4]
-		t[1, 1] = java_rotation_matrix[5]
-		t[1, 2] = java_rotation_matrix[6]
-		t[2, 0] = java_rotation_matrix[8]
-		t[2, 1] = java_rotation_matrix[9]
-		t[2, 2] = java_rotation_matrix[10]
+		# Copy values from the Java array to our matrix
+		for y in [0..4[ do
+			for x in [0..4[ do
+				camera.rotation_matrix[y, x] = java_rotation_matrix[y*4+x]
+			end
+		end
 
 		super
 	end
@@ -110,22 +106,37 @@ redef class GammitApp
 
 		### Mouse support (probably over bluetooth) for people without a compatible gamepad
 		if event isa AndroidPointerEvent then
-			if event.pressed then # TODO use just_wend_down
+			if event.pressed then # TODO use just_went_down
 				# Move forward
-				display.keys.downs.add "w"
+				#display.keys.downs.add "w"
 			else # event.depressed
-				if display.keys.downs.has("w") then display.keys.downs.remove "w"
+				#if display.keys.downs.has("w") then display.keys.downs.remove "w"
 			end
 			return true
-		else if event isa AndroidKeyEvent and event.is_down then
-			if event.is_back_key then
-				# place
-				act(display.width/2, display.height/2, false)
-				return true
-			else if event.key_code == 125 then
+		else if event isa AndroidKeyEvent then
+			print event.key_code
+			if event.is_back_key or event.is_a then
 				# mine
-				act(display.width/2, display.height/2, true)
+				if event.is_down then act(display.width/2, display.height/2, true)
 				return true
+			else if event.key_code == 125 or event.is_b then
+				# place
+				if event.is_down then act(display.width/2, display.height/2, false)
+				return true
+			else if event.is_dpad then
+				var letter = null
+				if event.is_dpad_up then letter = "w"
+				if event.is_dpad_down then letter = "s"
+				if event.is_dpad_left then letter = "a"
+				if event.is_dpad_right then letter = "d"
+				assert letter != null
+
+				if event.is_down then
+					display.keys.downs.add letter
+				else
+					display.keys.downs.remove letter
+					#if display.keys.downs.has("w") then display.keys.downs.remove "w"
+				end
 			end
 		else if event isa AndroidKeyEvent and event.is_back_key then
 			# Catch all back keys so it doesn't leave our app
@@ -133,5 +144,23 @@ redef class GammitApp
 		end
 
 		return super
+	end
+end
+
+redef class App
+	redef fun pause
+	do
+		var tracker = gammit.head_tracker
+		if tracker != null then
+			tracker.stop_tracking
+		end
+	end
+
+	redef fun resume
+	do
+		var tracker = gammit.head_tracker
+		if tracker != null then
+			tracker.start_tracking
+		end
 	end
 end
