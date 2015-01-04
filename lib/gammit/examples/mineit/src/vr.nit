@@ -31,7 +31,7 @@ end
 redef class GammitDisplay
 
 	#
-	var vr_camera: SimpleCamera
+	var vr_camera: nullable SimpleCamera = null
 
 	#display.projection_matrix = camera.mvp_matrix
 
@@ -40,6 +40,11 @@ redef class GammitDisplay
 
 	redef fun draw_all_the_things
 	do
+		if vr_camera == null then
+			super
+			return
+		end
+
 		# TODO tweak
 		var eye_sep = 0.02
 

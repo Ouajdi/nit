@@ -205,27 +205,45 @@ redef class GammitApp
 	redef fun setup
 	do
 		var display = new GammitDisplay(1920, 1200)
-		display.background_color = new Color(0.0, 157.0/255.0, 249.0/256.0)
-		display.lock_cursor = true
-		display.show_cursor = false
 		self.display = display
 
 		# You might want to grap all inputs too, but it also grabs alt-tab
 		#display.sdl_display.grab_input = true
 
+		show_splash_screen
+
 		# Load the main texture
+		display.visibles.clear
 		texture = display.load_texture_from_assets("terrain.png")
 		tile_size = 16
 
 		world = new MineitWorld
 		world.generate(display, self)
 
+		display.background_color = new Color(0.0, 157.0/255.0, 249.0/256.0)
+		display.lock_cursor = true
+		display.show_cursor = false
+
 		setup_ui
+	end
+
+	#
+	fun show_splash_screen
+	do
+		var splash = new UIElement(0.0, 0.0, 0.0)
+		splash.texture = display.load_texture_from_assets("splash.png")
+		splash.program = display.ui_program
+		splash.scale = 2.0
+
+		display.add splash
+		display.ui_program.mvp_matrix = new Matrix[Float].orthogonal(-1.0, 1.0, 1.0, -1.0, -1.0, 1.0)
+		display.draw_all_the_things
 	end
 
 	# Setup the UI elements
 	fun setup_ui
 	do
+		display.ui_program.mvp_matrix = new Matrix[Float].orthogonal(-1.0*display.aspect_ratio, 1.0*display.aspect_ratio, 1.0, -1.0, -1.0, 1.0)
 		# Add a crosshair at the center of the screen
 		var crosshair = new UIElement(0.0, 0.0, 0.0)
 		crosshair.texture = display.load_texture_from_assets("crosshair.png")

@@ -16,6 +16,7 @@
 module android is
 	app_version(0, 5, git_revision)
 	app_name "Mineit"
+	java_package "net.xymus.mineit"
 	android_manifest_activity """android:screenOrientation="landscape""""
 end
 

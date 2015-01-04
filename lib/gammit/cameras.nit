@@ -39,10 +39,14 @@ class SimpleCamera
 	super Camera
 
 	# Rotation around the X axis (looking down or up)
-	var down_up = 0.0 is writable
+	var pitch = 0.0 is writable
 
-	# Rotation around Y the axis (looking left or right)
-	var left_right = 0.0 is writable
+	# Rotation around the Y axis (looking left or right)
+	var yaw = 0.0 is writable
+
+	#TODO
+	# Rotation around the Z axis
+	#var roll = 0.0 is writable
 
 	# Look around sensitivity, used by `turn`
 	var sensitivity = 0.005 is writable
@@ -68,24 +72,24 @@ class SimpleCamera
 	fun turn(dx, dy: Float)
 	do
 		# Moving on x, turn around the y axis
-		left_right -= dx*sensitivity
-		down_up -= dy*sensitivity
+		yaw -= dx*sensitivity
+		pitch -= dy*sensitivity
 
 		# Protect rotation around then x axis for not falling on your back
-		down_up = down_up.min(pi/2.0)
-		down_up = down_up.max(-pi/2.0)
+		pitch = pitch.min(pi/2.0)
+		pitch = pitch.max(-pi/2.0)
 	end
 
 	# Move the camera considering the current orientation
 	fun move(dx, dy, dz: Float)
 	do
 		# +dz move forward
-		position.x -= left_right.sin*dz
-		position.z -= left_right.cos*dz
+		position.x -= yaw.sin*dz
+		position.z -= yaw.cos*dz
 
 		# +dx strafe to the right
-		position.x += left_right.cos*dx
-		position.z -= left_right.sin*dx
+		position.x += yaw.cos*dx
+		position.z -= yaw.sin*dx
 
 		# +dz move towards the sky
 		position.y += dy
@@ -97,8 +101,8 @@ class SimpleCamera
 		var view = new Matrix[Float].identity(4)
 
 		# Rotate the camera, first by looking left or right, then up or down
-		view.rotate(left_right, 0.0, 1.0, 0.0)
-		view.rotate(down_up, 1.0, 0.0, 0.0)
+		view.rotate(yaw, 0.0, 1.0, 0.0)
+		view.rotate(pitch, 1.0, 0.0, 0.0)
 
 		return view
 	end

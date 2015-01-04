@@ -1058,7 +1058,7 @@ end
 class GammitUIProgram
 	super DefaultGammitProgram
 
-	var mvp_matrix: Matrix[Float]
+	var mvp_matrix: Matrix[Float] is writable
 
 	#
 	init

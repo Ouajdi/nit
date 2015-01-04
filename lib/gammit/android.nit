@@ -75,7 +75,7 @@ redef class GammitApp
 end
 
 redef class App
-	redef fun extern_input_key(event)
+	redef fun native_input_key(event)
 	do
 		var gammit = gammit
 		if gammit != null then
@@ -85,7 +85,7 @@ redef class App
 		return false
 	end
 
-	redef fun extern_input_motion(event)
+	redef fun native_input_motion(event)
 	do
 		var gammit = gammit
 		if gammit != null then

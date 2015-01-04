@@ -23,12 +23,11 @@ import app
 
 redef class App
 
-	#
+	# The running `GammitApp`, if any
 	var gammit: nullable GammitApp = null
 
+	# Create a new `GammitApp`, may be refined to create custom apps
 	protected fun new_gammit_app: GammitApp do return new GammitApp
-
-	#var display: nullable GammitDisplay = null
 
 	redef fun window_created
 	do
