@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Contains the java and nit type representation used to convert java to nit code
-module types
+module model
 
 import jtype_converter
 
