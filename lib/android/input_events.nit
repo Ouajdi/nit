@@ -37,7 +37,7 @@ in "C" `{
 	   sending them in the Nit App */
 	static int32_t mnit_handle_input(struct android_app* app, AInputEvent* event) {
 		App nit_app = app->userData;
-		LOGI("handle input %i", (int)pthread_self());
+		LOGW("handle input %i %d %d", (int)pthread_self(), AInputEvent_getType(event), AInputEvent_getSource(event));
 		if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
 			LOGI("key");
 			return App_native_input_key(nit_app, event);
@@ -51,7 +51,14 @@ in "C" `{
 	}
 `}
 
-private extern class NativeAndroidMotionEvent `{AInputEvent *`}
+private extern class NativeAndroidInputEvent `{AInputEvent *`}
+	fun source: Int `{ return AInputEvent_getSource(recv); `}
+
+	fun device_id: Int `{ return AInputEvent_getDeviceId(recv); `}
+end
+
+private extern class NativeAndroidMotionEvent
+	super NativeAndroidInputEvent
 
 	fun pointers_count: Int `{
 		return AMotionEvent_getPointerCount(recv);
