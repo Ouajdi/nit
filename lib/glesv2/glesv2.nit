@@ -25,6 +25,34 @@
 # The tool must be in PATH. It can be downloaded from
 # https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/
 #
+# # API structure
+#
+# Services offered by this module aims to be close to the C API while
+# preserving a style compatible with the Nit language.
+#
+# * `gl` prefixed functions of the C API are replaced by methods of the same
+# name, without the prefix, in snake case, accessible within the utility object
+# at `gl`.
+#
+#     Example: `glDrawTriangles -> gl.draw_triangles`
+#
+# * Instances of `GLEnum` are represented by a set of classes prefixed by `GL`,
+# subclasses to the Nit class `GLEnum`. The Nit class represent the category
+# or the user method, named constructors access specific intances of the
+# enumeration.
+#
+#     Example: `GL_CLAMP_TO_EDGE -> new GLTextureWrap::clamp_to_edge`
+#
+# * Some creative naming is applied when the name resulting from previous
+# conversions is not supported in Nit.
+#
+#     Example: `GL_TEXTURE_2D -> new GLTextureTarget.flat`
+#
+# * Many precise methods for the same C function where different arguments
+# imply different argument types. Better static typing.
+#
+# # External links
+#
 # Most services of this module are a direct wrapper of the underlying
 # C library. If a method or class is not documented in Nit, refer to
 # the official documentation by the Khronos Group at:
@@ -542,6 +570,13 @@ extern class GLEnum `{ GLenum `}
 	redef fun ==(o) do return o != null and is_same_type(o) and o.hash == self.hash
 end
 
+extern class GLUint`{GLuint`}
+
+	redef fun hash `{ return recv; `}
+
+	redef fun ==(o) do return o != null and is_same_type(o) and o.hash == self.hash
+end
+
 # An OpenGL ES 2.0 error code
 extern class GLError
 	super GLEnum
@@ -657,6 +692,10 @@ extern class GLTextureMinFilter
 
 	new nearest `{ return GL_NEAREST; `}
 	new linear `{ return GL_LINEAR; `}
+	new nearest_mipmap_nearest `{ return GL_NEAREST_MIPMAP_NEAREST; `}
+	new linear_mipmap_nearest `{ return GL_LINEAR_MIPMAP_NEAREST; `}
+	new nearest_mipmap_linear `{ return GL_NEAREST_MIPMAP_LINEAR; `}
+	new linear_mipmap_linear `{ return GL_LINEAR_MIPMAP_LINEAR; `}
 end
 
 # Texture magnification function
@@ -667,10 +706,6 @@ extern class GLTextureMagFilter
 
 	new nearest `{ return GL_NEAREST; `}
 	new linear `{ return GL_LINEAR; `}
-	new nearest_mipmap_nearest `{ return GL_NEAREST_MIPMAP_NEAREST; `}
-	new linear_mipmap_nearest `{ return GL_LINEAR_MIPMAP_NEAREST; `}
-	new nearest_mipmap_linear `{ return GL_NEAREST_MIPMAP_LINEAR; `}
-	new linear_mipmap_linear `{ return GL_LINEAR_MIPMAP_LINEAR; `}
 end
 
 # Wrap parameter of a texture
@@ -736,14 +771,44 @@ class GLRenderbuffer
 	fun bind do bind_native(id)
 	private fun bind_native(id: Int) `{ glBindRenderbuffer(GL_RENDERBUFFER, id); `}
 
-	fun storage(width, height: Int) `{
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
+
+	# TODO max samples GL_MAX_RENDERBUFFER_SIZE
+	fun storage(format: GLRenderbufferFormat, width, height: Int) `{
+		glRenderbufferStorage(GL_RENDERBUFFER, format, width, height);
+	`}
+
+	# TODO max samples GL_MAX_SAMPLES
+	# TODO format
+	fun storage_multisample(format: GLRenderbufferFormat, samples, width, height: Int) `{
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format, width, height);
 	`}
 
 	fun attach do attach_native(id)
-	fun attach_native(id: Int) `{
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, id);
+
+
+	# TODO move to framebuffer?
+	fun attach_native(target: GLFramebufferTarget, attachment: GLAttachment, id: Int) `{
+		glFramebufferRenderbuffer(target, attachment, GL_RENDERBUFFER, id);
 	`}
+end
+
+extern class GLRenderbufferFormat
+	super GLEnum
+
+	new rgba4 `{ return GL_RGBA4; `}
+	new rgb565 `{ return GL_RGB565; `}
+	new rgb5_a1 `{ return GL_RGB5_A1; `}
+	new depth_component_16 `{ return GL_DEPTH_COMPONENT16; `}
+	new stencil_index `{ return GL_STENCIL_INDEX8; `}
+end
+
+extern class GLAttachment
+	super GLEnum
+
+	new color `{ return GL_COLOR_ATTACHMENTi; `}
+	new depth `{ return GL_DEPTH_ATTACHMENT; `}
+	new stencil `{ return GL_STENCIL_ATTACHMENT; `}
+	new depth_stencil `{ return GL_DEPTH_STENCILCOLOR_ATTACHMENT; `}
 end
 
 extern class NativeGLfloatMatrix `{ GLfloat* `}
@@ -851,6 +916,8 @@ class GLES
 	# Should always return `true` in OpenGL ES 2.0 and 3.0.
 	fun shader_compiler: Bool do return get_bool(0x8DFA)
 
+	#fun max_
+
 	# Enable or disable writing into the depth buffer
 	fun depth_mask(value: Bool) `{ glDepthMask(value); `}
 
@@ -911,6 +978,22 @@ class GLES
 		glTexParameteri(target, GL_TEXTURE_WRAP_T, value);
 	`}
 
+	# Generate a fill set of mipmaps for a texture object
+	fun generate_mipmap(target: GLTextureTarget) `{ glGenerateMipmap(target); `}
+
+	# Specify hints for `generate_mipmap`
+	fun hint_generate_mipmap(mode: GLHintMode) `{
+		glHint(GL_GENERATE_MIPMAP_HINT, mode);
+	`}
+
+	fun copy_tex_image_2d `{
+		//glCopyTexImage2D
+	`}
+
+	fun copy_tex_sub_image_2d `{
+		//glCopyTexSubImage2D
+	`}
+
 	# Render primitives from array data
 	#
 	# Foreign: glDrawArrays
@@ -919,6 +1002,56 @@ class GLES
 	# OpenGL server-side capabilities
 	var capabilities = new GLCapabilities is lazy
 end
+
+# Arguments for `gl.hint_generate_mipmap`
+extern class GLHintMode
+	super GLEnum
+
+	new fastest `{ return GL_FASTEST; `}
+	new nicest `{ return GL_NICEST; `}
+	new dont_care `{ return GL_DONT_CARE; `}
+end
+
+# Buffer allocated by the application # check def
+#
+# + Multi samplin
+# + fast when not used as a texture
+extern class Renderbuffer
+end
+
+# Collection of textures or render targets
+#
+# One color, depth and stencil attachemns (total 3)
+#
+# * Singe-buffered
+extern class GLFramebuffer
+	super GLUint
+
+	new `{
+		GLuint ids;
+		glGenFramebuffers(1, &ids);
+		return ids;
+	`}
+
+	fun bind(target: GLFramebufferTarget) `{
+		glBindFramebuffer(target, recv);
+	`}
+
+	fun attach_texture_2d(target: GLFramebufferTarget, attachment: GLAttachment,
+		texture_target: GLTextureTarget,  texture: GLTexture, level: Int) `{
+		glFramebufferTexture2D(target, attachment, texture_target, texture, level);
+	`}
+end
+
+extern class GLFramebufferTarget
+	super GLEnum
+
+	new `{ return GL_FRAMEBUFFER; `}
+	new read `{ return GL_READ_FRAMEBUFFER; `}
+	new draw `{ return GL_WRITE_FRAMEBUFFER; `}
+end
+
+# TODO render and framebuffer sets
 
 # Entry point to OpenGL server-side capabilities
 class GLCapabilities
