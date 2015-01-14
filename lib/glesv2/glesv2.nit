@@ -30,14 +30,20 @@
 # the official documentation by the Khronos Group at:
 # http://www.khronos.org/opengles/sdk/docs/man/
 module glesv2 is
-	pkgconfig
 	new_annotation glsl_vertex_shader
 	new_annotation glsl_fragment_shader
 end
 
 
 in "C Header" `{
-	#include <GLES2/gl2.h>
+	//#ifdef __APPLE__
+	#ifdef TARGET_OS_IPHONE
+		#include <OpenGLES/GL2/gl.h>
+	#elif TARGET_OS_MAC
+		#include <OpenGL/OpenGL.h>
+	#else
+		#include <GLES2/gl2.h>
+	#endif
 `}
 
 # OpenGL ES program to which we attach shaders
