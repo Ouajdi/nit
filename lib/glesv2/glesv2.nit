@@ -34,19 +34,19 @@
 # name, without the prefix, in snake case, accessible within the utility object
 # at `gl`.
 #
-#     Example: `glDrawTriangles -> gl.draw_triangles`
+#     Example: `glDrawTriangles` becomes `gl.draw_triangles`
 #
 # * Instances of `GLEnum` are represented by a set of classes prefixed by `GL`,
 # subclasses to the Nit class `GLEnum`. The Nit class represent the category
 # or the user method, named constructors access specific intances of the
 # enumeration.
 #
-#     Example: `GL_CLAMP_TO_EDGE -> new GLTextureWrap::clamp_to_edge`
+#     Example: `GL_CLAMP_TO_EDGE` becomes `new GLTextureWrap::clamp_to_edge`
 #
 # * Some creative naming is applied when the name resulting from previous
 # conversions is not supported in Nit.
 #
-#     Example: `GL_TEXTURE_2D -> new GLTextureTarget.flat`
+#     Example: `GL_TEXTURE_2D` becomes `new GLTextureTarget.flat`
 #
 # * Many precise methods for the same C function where different arguments
 # imply different argument types. Better static typing.
@@ -783,8 +783,11 @@ class GLRenderbuffer
 		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format, width, height);
 	`}
 
-	fun attach do attach_native(id)
-
+	# Must be `new GLFramebufferTarget`
+	fun attach(target: GLFramebufferTarget, attachment: GLAttachment)
+	do
+		attach_native(target, attachment, id)
+	end
 
 	# TODO move to framebuffer?
 	fun attach_native(target: GLFramebufferTarget, attachment: GLAttachment, id: Int) `{
@@ -805,10 +808,10 @@ end
 extern class GLAttachment
 	super GLEnum
 
-	new color `{ return GL_COLOR_ATTACHMENTi; `}
+	new color0 `{ return GL_COLOR_ATTACHMENT0; `}
 	new depth `{ return GL_DEPTH_ATTACHMENT; `}
 	new stencil `{ return GL_STENCIL_ATTACHMENT; `}
-	new depth_stencil `{ return GL_DEPTH_STENCILCOLOR_ATTACHMENT; `}
+	#new depth_stencil `{ return GL_DEPTH_STENCIL_ATTACHMENT; `}
 end
 
 extern class NativeGLfloatMatrix `{ GLfloat* `}
@@ -994,6 +997,10 @@ class GLES
 		//glCopyTexSubImage2D
 	`}
 
+	fun bind_buffer(target: GLArrayBuffer, buffer: Int) `{
+		glBindBuffer(target, buffer);
+	`}
+
 	# Render primitives from array data
 	#
 	# Foreign: glDrawArrays
@@ -1001,6 +1008,13 @@ class GLES
 
 	# OpenGL server-side capabilities
 	var capabilities = new GLCapabilities is lazy
+end
+
+extern class GLArrayBuffer
+	super GLEnum
+
+	new `{ return GL_ARRAY_BUFFER; `}
+	new element `{ return GL_ELEMENT_ARRAY_BUFFER; `}
 end
 
 # Arguments for `gl.hint_generate_mipmap`
@@ -1033,12 +1047,19 @@ extern class GLFramebuffer
 		return ids;
 	`}
 
+	# Must be `new GLFramebufferTarget`
 	fun bind(target: GLFramebufferTarget) `{
 		glBindFramebuffer(target, recv);
 	`}
 
 	fun attach_texture_2d(target: GLFramebufferTarget, attachment: GLAttachment,
-		texture_target: GLTextureTarget,  texture: GLTexture, level: Int) `{
+		texture_target: GLTextureTarget,  texture: GLTexture, level: Int)
+	do
+		native_attach_texture_2d(target, attachment, texture_target, texture.id, level)
+	end
+
+	fun native_attach_texture_2d(target: GLFramebufferTarget, attachment: GLAttachment,
+		texture_target: GLTextureTarget,  texture, level: Int) `{
 		glFramebufferTexture2D(target, attachment, texture_target, texture, level);
 	`}
 end
@@ -1047,8 +1068,8 @@ extern class GLFramebufferTarget
 	super GLEnum
 
 	new `{ return GL_FRAMEBUFFER; `}
-	new read `{ return GL_READ_FRAMEBUFFER; `}
-	new draw `{ return GL_WRITE_FRAMEBUFFER; `}
+	#new read `{ return GL_READ_FRAMEBUFFER; `}
+	#new draw `{ return GL_DRAW_FRAMEBUFFER; `}
 end
 
 # TODO render and framebuffer sets
@@ -1080,6 +1101,7 @@ class GLCapabilities
 	#
 	# Foreign: GL_POLYGON_OFFSET_FILL
 	fun polygon_offset_fill: GLCap is lazy do return new GLCap(0x8037)
+
 
 	# GL capability: compute a temporary coverage value where each bit is determined by the alpha value at the corresponding location
 	#
