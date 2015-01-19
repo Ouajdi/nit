@@ -7,8 +7,7 @@ linux:
 	../../../../bin/nitc -o bin/mineit_server src/server.nit
 
 debug:
-	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit
-	adb install -r bin/mineit_vr.apk
+	../../../../bin/nitc -o bin/fbo src/fbo.nit
 
 android-release:
 	../../../../bin/nitc -o bin/mineit_vr.apk --release src/android_vr.nit
