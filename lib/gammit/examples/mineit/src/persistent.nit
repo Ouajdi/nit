@@ -92,12 +92,18 @@ redef class GammitApp
 	do
 
 		var s = save_file_path.open_wo
-		s.write """
+		s.write to_json
+		s.close
+	end
+	
+	#
+	fun to_json: String
+	do
+		return """
 {
 "world": {{{world.to_json}}},
 "camera": {{{camera.to_json}}}
 }"""
-		s.close
 	end
 
 	private fun load: Bool
@@ -105,6 +111,11 @@ redef class GammitApp
 		if not save_file_path.exists then return false
 
 		var content = save_file_path.read_all
+		return load_from_json(content)
+	end
+
+	fun load_from_json(content: String): Bool
+	do
 		var json = content.to_json_value
 
 		if json.is_error then
@@ -139,7 +150,7 @@ redef class GammitApp
 				textures[c*4].to_f, textures[c*4+1].to_f,
 				textures[c*4+2].to_f, textures[c*4+3].to_f)
 
-			block.color = new Color(colors[c*4].to_f, colors[c*4+1].to_f, colors[c*4+2].to_f)
+			block.color = new Color(colors[c*4].to_f, colors[c*4+1].to_f, colors[c*4+2].to_f, 1.0)
 			block.color.a = colors[c*4+3].to_f
 		end
 
