@@ -10,7 +10,7 @@ debug:
 	../../../../bin/nitc -o bin/fbo src/fbo.nit
 
 d:
-	../../../../bin/nitc -o bin/mineit.apk src/android.nit
+	../../../../bin/nitc -o bin/mineit.apk src/android.nit -m ~/projects/nit/lib/android/debug.nit
 	adb install -r bin/mineit.apk
 
 android-release:
