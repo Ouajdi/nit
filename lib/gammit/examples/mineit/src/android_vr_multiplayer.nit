@@ -17,6 +17,7 @@ module android_vr_multiplayer is
 	android_manifest """<uses-permission android:name="android.permission.INTERNET"/>"""
 	app_version(0, 5, git_revision)
 	app_name "Mineit VR Multi"
+	java_package "net.xymus.mineit_vr_multi"
 end
 
 	#android_manifest """<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>"""

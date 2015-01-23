@@ -20,6 +20,7 @@ module android_vr is
 	android_manifest_activity """
 		android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 		android:screenOrientation="landscape""""
+	min_api_version 19
 end
 
 import gammit::android
@@ -28,6 +29,7 @@ import ::android::gamepad
 
 import vr
 import optimized
+import persistent
 
 redef class SimpleCamera
 	# Do not use `yaw` and `pitch`, the value will instead originate from the Cardboard API
@@ -139,6 +141,8 @@ end
 redef class App
 	redef fun pause
 	do
+		if gammit == null then return
+
 		var tracker = gammit.head_tracker
 		if tracker != null then
 			tracker.stop_tracking
@@ -147,9 +151,43 @@ redef class App
 
 	redef fun resume
 	do
+		if gammit == null then return
+
 		var tracker = gammit.head_tracker
 		if tracker != null then
 			tracker.start_tracking
 		end
 	end
+
+	redef fun gained_focus
+	do
+		super
+
+		print "immersive -------------------------------------------------"
+		native_activity.immersive
+	end
+
+	redef fun window_resized
+	do
+		super
+
+		print "resize ------------------------------------------"
+	end
+end
+
+redef class NativeActivity
+
+	#
+	fun immersive in "Java" `{
+
+		final android.app.Activity final_recv = recv;
+
+		recv.runOnUiThread(new Runnable() {
+			@Override
+			public void run()  {
+		final_recv.getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+			android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+			}
+		});
+	`}
 end
