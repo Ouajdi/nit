@@ -29,6 +29,7 @@ import ::android::gamepad
 
 import vr
 import optimized
+import persistent
 
 redef class MineitWorld
 
@@ -150,6 +151,8 @@ end
 redef class App
 	redef fun pause
 	do
+		if gammit == null then return
+
 		var tracker = gammit.head_tracker
 		if tracker != null then
 			tracker.stop_tracking
@@ -158,6 +161,8 @@ redef class App
 
 	redef fun resume
 	do
+		if gammit == null then return
+
 		var tracker = gammit.head_tracker
 		if tracker != null then
 			tracker.start_tracking
