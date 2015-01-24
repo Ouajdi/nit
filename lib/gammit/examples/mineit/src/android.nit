@@ -27,11 +27,11 @@ import optimized
 
 redef class MineitWorld
 
-	redef var ground_cover = [-4 .. 4]
+	redef var ground_cover = [-8 .. 8]
 
-	redef var ground_depth = 3
+	redef var ground_depth = 20
 
-	redef var speed = 0.1
+	redef var speed = 0.05
 end
 
 redef class GammitApp

@@ -20,7 +20,6 @@ module android_vr is
 	android_manifest_activity """
 		android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 		android:screenOrientation="landscape""""
-	min_api_version 19
 end
 
 import gammit::android
@@ -30,16 +29,6 @@ import ::android::gamepad
 import vr
 import optimized
 import persistent
-
-redef class MineitWorld
-
-	# Tweak the world size, make it deep
-	redef var ground_cover = [-8 .. 8]
-	redef var ground_depth = 20
-
-	# Slow down our player so it's easier to navigate
-	redef var speed = 0.05
-end
 
 redef class SimpleCamera
 	# Do not use `yaw` and `pitch`, the value will instead originate from the Cardboard API

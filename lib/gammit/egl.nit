@@ -51,19 +51,29 @@ redef class GammitDisplay
 	fun select_egl_config(blue, green, red, alpha, depth, stencil, sample: Int)
 	do
 		var config_chooser = new EGLConfigChooser
+		config_chooser.renderable_type_egl
 		config_chooser.surface_type_egl
-		config_chooser.blue_size = 8
-		config_chooser.green_size = 8
-		config_chooser.red_size = 8
-		config_chooser.alpha_size = 8
-		config_chooser.depth_size = 8
-		config_chooser.stencil_size = stencil
-		config_chooser.sample_buffers = sample
+		config_chooser.blue_size = blue
+		config_chooser.green_size = green
+		config_chooser.red_size = red
+		if alpha > 0 then config_chooser.alpha_size = alpha
+		if depth > 0 then config_chooser.depth_size = depth
+		if stencil > 0 then config_chooser.stencil_size = stencil
+		if sample > 0 then config_chooser.sample_buffers = sample
 		config_chooser.close
 
 		var configs = config_chooser.choose(egl_display)
 		assert configs != null else print "choosing config failed: {egl_display.error}"
 		assert not configs.is_empty else print "no EGL config"
+
+		# TODO keep?
+		for config in configs do
+			var attribs = config.attribs(egl_display)
+			print "* Conformant to: {attribs.conformant}"
+			print "  Caveats: {attribs.caveat}"
+			print "  Size of RGBA: {attribs.red_size} {attribs.green_size} {attribs.blue_size} {attribs.alpha_size}"
+			print "  Buffer, depth, stencil: {attribs.buffer_size} {attribs.depth_size} {attribs.stencil_size}"
+		end
 
 		self.egl_config = configs.first
 	end

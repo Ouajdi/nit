@@ -351,14 +351,6 @@ class GammitDisplay
 			var vertices = new Array[Float]
 			var tex_coords = new Array[Float]
 
-			# Texture
-			var texture_location = default_program.gl_program.uniform_location("vTex")
-			assert_no_gl_error
-
-			# 
-			var projection_location = default_program.gl_program.uniform_location("projection")
-			assert_no_gl_error
-
 			# Acumulate all entries into a vertex arrays
 			# TODO use a VBO
 			for entry in set do if entry isa Selectable then # TODO move up selectable to VisibleMap
@@ -401,38 +393,46 @@ class GammitDisplay
 			end
 
 			# Prepare data for OpenGL ES
-			var va_colors = new VertexArray(1, 4, colors)
-			va_colors.attrib_pointer
-			va_colors.enable
+			var vertex = set.vertex(program.color, colors)
+			program.color.array_pointer0(4, vertex)
+			program.color.array_enabled = true
 
-			var va_translation = new VertexArray(2, 3, translation)
-			va_translation.attrib_pointer
-			va_translation.enable
+			vertex = set.vertex(program.translation, translation)
+			program.translation.array_pointer0(3, vertex)
+			program.translation.array_enabled = true
 
-			var va_scale = new VertexArray(3, 1, scale)
-			va_scale.attrib_pointer
-			va_scale.enable
+			vertex = set.vertex(program.scale, scale)
+			program.scale.array_pointer0(1, vertex)
+			program.scale.array_enabled = true
 
-			var vertex_array = new VertexArray(0, 3, vertices)
-			vertex_array.attrib_pointer
-			vertex_array.enable
+			vertex = set.vertex(program.position, vertices)
+			program.position.array_pointer0(3, vertex)
+			program.position.array_enabled = true
 
-			var vertex_tex_coords = new VertexArray(4, 2, tex_coords)
-			vertex_tex_coords.attrib_pointer
-			vertex_tex_coords.enable
+			vertex = set.vertex(program.texture_coordinates, tex_coords)
+			program.texture_coordinates.array_pointer0(2, vertex)
+			program.texture_coordinates.array_enabled = true
 
 			program.use_texture.value = texture != null
+			program.texture_coordinates.array_enabled = texture != null
 
 			if texture != null then
 				texture.active 0
 				texture.bind
-				var texture_uniform = new UniformInt1(texture_location, 0)
+				program.texture.value = 0
 			end
 
-			var projection_uniform = new UniformMatrix4(projection_location, projection_matrix)
+			if program isa GammitUIProgram then
+				program.projection.value = program.mvp_matrix
+			else
+				program.projection.value = projection_matrix
+			end
 
-			vertex_array.draw_arrays_triangles(0, vertices.length/3)
-			assert_no_gl_error
+			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
+
+			program.draw(draw_mode, 0, vertices.length/3)
+
+			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
 		end
 	end
 
@@ -1008,7 +1008,7 @@ class DefaultGammitProgram
 end
 
 class GammitSelectionProgram
-	super GammitProgram
+	super DefaultGammitProgram
 
 	#
 	init
@@ -1017,50 +1017,48 @@ class GammitSelectionProgram
 		super
 	end
 
-	#
-	var vertex_shader_source = """
-		#version 300 es
-		layout(location = 0) in vec4 vPosition;
-		layout(location = 1) in vec4 vId;
-		layout(location = 2) in vec4 vTranslation;
-		layout(location = 3) in float vScale;
-		layout(location = 4) in vec2 vTexCoord;
-		uniform mat4 projection;
-		out vec4 v_color;
-		out vec2 v_texCoord;
+	# REMOVE!
+	var vertex_shader_source2 = """
+		attribute vec4  position;
+		attribute vec4  color;
+		attribute vec4  translation;
+		attribute float scale;
+		attribute vec2  texCoord;
+
+		uniform  mat4 projection;
+
+		varying vec4 v_color;
+		varying vec2 v_texCoord;
+
 		void main()
 		{
-		  v_color = vId;
-		  gl_Position = (vPosition * vScale + vTranslation) * projection;
-		  v_texCoord = vTexCoord;
+		  v_color = color;
+		  gl_Position = (vec4(position.xyz * scale, 1.0) + translation) * projection;
+		  v_texCoord = texCoord;
 		}
 		""" @ glsl_vertex_shader
 
 	#
-	var fragment_shader_source = """
-		#version 300 es
+	redef var fragment_shader_source = """
 		precision mediump float;
 
-		in vec4 v_color;
-		in vec2 v_texCoord;
+		varying vec4 v_color;
+		varying vec2 v_texCoord;
 
 		uniform sampler2D vTex;
 		uniform bool use_texture;
 
-		layout(location = 0) out vec4 outColor;
-
 		void main()
 		{
-			outColor.rgb = v_color.rgb;
-			if(use_texture) {
-				outColor.a = roundEven(texture(vTex, v_texCoord).a);
+			gl_FragColor.rgb = v_color.rgb;
+
+			if(!use_texture || texture2D(vTex, v_texCoord).a >= 0.0 ) {
+				gl_FragColor.a = 1.0;
 			} else {
-				outColor.a = 1.0;
+				gl_FragColor.a = 0.0;
 			}
 		}
 		""" @ glsl_fragment_shader
-
-	fun use_texture: UniformBool is lazy do return uniforms["use_texture"].as(UniformBool)
 end
 
 class GammitUIProgram
