@@ -49,6 +49,7 @@ extern void nitni_global_ref_incr(void*);
 extern void nitni_global_ref_decr(void*);
 """
 
+		var cflags = self.cflags[null].join(" ")
 		nitni_ccu.write_as_nitni(self, v.compiler.modelbuilder.compile_dir)
 
 		for file in nitni_ccu.files do
@@ -76,11 +77,8 @@ extern void nitni_global_ref_decr(void*);
 
 	redef fun collect_linker_libs
 	do
-		var s = ldflags
-		if s.is_empty then return null
-		var res = new ArraySet[String]
-		res.add s
-		return res
+		if not self.ldflags.keys.has(null) then return null
+		return self.ldflags[null]
 	end
 
 	private var compiled_callbacks = new Array[NitniCallback]

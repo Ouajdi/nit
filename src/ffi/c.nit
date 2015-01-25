@@ -72,8 +72,12 @@ redef class Location
 end
 
 redef class MModule
-	var cflags = "" is writable
-	var ldflags = "" is writable
+
+	# Custom options for the C compiler (CFLAGS)
+	var cflags = new MultiHashMap[nullable String, String]
+
+	# Custom options for the C linker (LDFLAGS)
+	var ldflags = new MultiHashMap[nullable String, String]
 
 	# Additional libraries needed for the compilation
 	# Will be used with pkg-config

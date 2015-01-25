@@ -27,7 +27,8 @@ end
 redef class MModule
 	private var cpp_file: nullable CPPCompilationUnit = null
 
-	var cppflags = "" is writable
+	# Custom options for the C++ compiler (CPPFLAGS)
+	var cppflags = new MultiHashMap[nullable String, String]
 end
 
 class CPPLanguage
@@ -133,7 +134,7 @@ class CPPLanguage
 		mmodule.ffi_files.add(file)
 
 		# add linked option to support C++
-		mmodule.ldflags = "{mmodule.ldflags} -lstdc++"
+		mmodule.ldflags.add_one(null, "-lstdc++")
 	end
 
 	redef fun compile_callback(callback, mmodule, mainmodule, ecc)

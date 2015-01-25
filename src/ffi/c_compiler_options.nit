@@ -128,35 +128,36 @@ private class CCompilerOptionsPhase
 			end
 		end
 
-		# retreive module
+		# Get target platform from annotation on annotation
+		var platform = null
+		var annots = nat.n_annotations
+		if annots != null then
+			var items = annots.n_items
+			if items.length > 1 then
+				modelbuilder.error(annots, "Annotation error: `annotation_name` accepts only a single annotation, the platform name")
+				return
+			end
+			assert items.length == 1
+
+			var item = items.first
+			platform = item.name
+		end
+
+		# Retrieve module
 		var mmodule = nmoduledecl.parent.as(AModule).mmodule.as(not null)
 
 		for opt in simplified_options do
-			var cmd = opt.option
+			var arg = opt.option
 			if annotation_name == compiler_annotation_name then
-				process_c_compiler_annotation(mmodule, cmd)
+				mmodule.cflags.add_one(platform, arg)
 			else if annotation_name == linker_annotation_name then
-				process_c_linker_annotation(mmodule, cmd)
+				mmodule.ldflags.add_one(platform, arg)
 			else if annotation_name == cpp_compiler_annotation_name then
-				process_cpp_compiler_annotation(mmodule, cmd)
+				mmodule.cppflags.add_one(platform, arg)
 			else abort
 		end
 	end
 
-	fun process_c_compiler_annotation(mmodule: MModule, opt: String)
-	do
-		mmodule.cflags = "{mmodule.cflags} {opt}"
-	end
-
-	fun process_c_linker_annotation(mmodule: MModule, opt: String)
-	do
-		mmodule.ldflags = "{mmodule.ldflags} {opt}"
-	end
-
-	fun process_cpp_compiler_annotation(mmodule: MModule, opt: String)
-	do
-		mmodule.cppflags = "{mmodule.cppflags} {opt}"
-	end
 end
 
 abstract class CCompilerOption
