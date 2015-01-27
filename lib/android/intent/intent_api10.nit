@@ -18,7 +18,7 @@
 # `android.content.Intent` for the android platform
 module intent_api10
 
-import native_app_glue
+import nit_activity
 import android::bundle
 import serialization
 private import json_serialization

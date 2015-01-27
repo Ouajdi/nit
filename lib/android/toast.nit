@@ -17,7 +17,7 @@
 # Services to display a _toast_, a small popup on Android
 module toast
 
-import native_app_glue
+import nit_activity
 
 in "Java" `{
 	import android.widget.Toast;
