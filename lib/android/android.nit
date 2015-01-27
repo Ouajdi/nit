@@ -20,9 +20,12 @@
 # achieved by importing `android::log`.
 module android
 
+import pthreads
+
 import platform
-import native_app_glue
+import nit_activity
 import dalvik
+
 private import log
 private import android_data_store
 
@@ -33,57 +36,4 @@ redef class App
 	redef fun log_error(msg) do log_write(priority_error, log_prefix.to_cstring, msg.to_cstring)
 
 	redef fun log_warning(msg) do log_write(priority_warn, log_prefix.to_cstring, msg.to_cstring)
-
-	redef fun init_window
-	do
-		super
-		window_created
-	end
-
-	redef fun term_window
-	do
-		super
-		window_closing
-	end
-
-	# Is the application currently paused?
-	var paused = true
-
-	redef fun window_created
-	do
-		super
-		paused = false
-	end
-
-	redef fun window_closing
-	do
-		paused = true
-		super
-	end
-
-	redef fun pause
-	do
-		paused = true
-		super
-	end
-
-	redef fun resume
-	do
-		paused = false
-		super
-	end
-
-	redef fun lost_focus
-	do
-		paused = true
-		super
-	end
-
-	redef fun gained_focus
-	do
-		paused = false
-		super
-	end
-
-	redef fun destroy do exit 0
 end
