@@ -23,6 +23,7 @@ module platform is
 	new_annotation android_manifest
 	new_annotation android_manifest_application
 	new_annotation android_manifest_activity
+	new_annotation android
 end
 
 import java
