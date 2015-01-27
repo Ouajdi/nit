@@ -34,7 +34,7 @@
 # ~~~
 module ui is min_api_version 14
 
-import native_app_glue
+import nit_activity
 import pthreads::concurrent_collections
 
 in "Java" `{
@@ -58,6 +58,7 @@ in "Java" `{
 # An event from the `app.nit` framework
 interface AppEvent
 	# Reaction to this event
+	# TODO remove all react?
 	fun react do end
 end
 
@@ -73,35 +74,12 @@ end
 
 # Receiver of events not handled directly by the sender
 interface EventCatcher
+	#
 	fun catch_event(event: AppEvent) do end
 end
 
 redef class App
 	super EventCatcher
-
-	# Queue of events to be received by the main thread
-	var event_queue = new ConcurrentList[AppEvent]
-
-	# Call `react` on all `AppEvent` available in `event_queue`
-	protected fun loop_on_ui_callbacks
-	do
-		var queue = event_queue
-		while not queue.is_empty do
-			var event = queue.pop
-			event.react
-		end
-	end
-
-	redef fun run
-	do
-		loop
-			# Process Android events
-			poll_looper 100
-
-			# Process app.nit events
-			loop_on_ui_callbacks
-		end
-	end
 end
 
 redef extern class NativeActivity
@@ -124,6 +102,7 @@ end
 
 # An `Object` that raises events
 abstract class Eventful
+	#
 	var event_catcher: EventCatcher = app is lazy, writable
 end
 
@@ -186,23 +165,18 @@ class Button
 
 	init
 	do
-		var native = new NativeButton(app.native_activity, app.event_queue, self)
+		var native = new NativeButton(app.native_activity, self)
 		self.native = native.new_global_ref
 	end
 
-	# Click event on the Main thread
+	# Click event
 	#
 	# By default, this method calls `app.catch_event`. It can be specialized
 	# with custom behavior or the receiver of `catch_event` can be changed
 	# with `event_catcher=`.
 	fun click(event: AppEvent) do event_catcher.catch_event(event)
 
-	# Click event on the UI thread
-	#
-	# This method is called on the UI thread and redirects the event to `click`
-	# throught `App::event_queue`. In most cases, you should implement `click`
-	# and leave `click_ui` as is.
-	fun click_ui do app.event_queue.add(new ClickEvent(self))
+	private fun click_from_native do click(new ClickEvent(self))
 end
 
 # An Android editable text field
@@ -213,7 +187,7 @@ class EditText
 
 	init
 	do
-		var native = new NativeEditText(app.native_activity)
+		var native = new NativeEditText(app.activities.first.native)
 		self.native = native.new_global_ref
 	end
 end
@@ -352,14 +326,15 @@ extern class NativeButton in "Java" `{ android.widget.Button `}
 
 	redef type SELF: NativeButton
 
-	new (context: NativeActivity, queue: ConcurrentList[AppEvent], sender_object: Object) import Button.click_ui in "Java" `{
+	new (context: NativeActivity, sender_object: Object)
+	import Button.click_from_native in "Java" `{
 		final int final_sender_object = sender_object;
 
 		return new Button(context){
 			@Override
 			public boolean onTouchEvent(MotionEvent event) {
 				if(event.getAction() == MotionEvent.ACTION_DOWN) {
-					Button_click_ui(final_sender_object);
+					Button_click_from_native(final_sender_object);
 					return true;
 				}
 				return false;
