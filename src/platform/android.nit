@@ -192,15 +192,15 @@ $(call import-module,android/native_app_glue)
 		android:label="@string/app_name"
 		android:hasCode="true"
 		android:debuggable="{{{not release}}}"
-		{{{icon_declaration}}}
-		android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|screenLayout|fontScale|uiMode|orientation">
+		{{{icon_declaration}}}>
 
         <!-- Our activity is the built-in NativeActivity framework class.
              This will take care of integrating with our NDK code. -->
         <activity android:name="android.app.NativeActivity"
                 android:label="@string/app_name"
                 {{{project.manifest_activity_attributes.join("\n")}}}
-                {{{icon_declaration}}}>
+                {{{icon_declaration}}}
+                android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|screenLayout|fontScale|uiMode|orientation">
             <!-- Tell NativeActivity the name of our .so -->
             <meta-data android:name=\"android.app.lib_name\"
                     android:value=\"main\" />
