@@ -80,7 +80,7 @@ redef class GammitDisplay
 
 	redef fun check_lock_cursor
 	do
-		if lock_cursor and sdl_display.has_input_focus then
+		if lock_cursor and sdl_display.input_focus then
 			sdl_display.ignore_mouse_motion_events = true
 			sdl_display.warp_mouse(width/2, height/2)
 			sdl_display.ignore_mouse_motion_events = false
