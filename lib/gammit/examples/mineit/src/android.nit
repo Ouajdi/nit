@@ -21,6 +21,7 @@ module android is
 end
 
 import gammit::android
+import ::android::debug
 
 import mineit
 import optimized
@@ -117,7 +118,7 @@ redef class GammitApp
 
 	redef fun frame_logic
 	do
-		super
+		if not app.paused then super
 
 		# Show the perf stats once in a while
 		tick += 1

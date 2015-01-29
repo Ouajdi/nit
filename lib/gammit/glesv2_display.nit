@@ -270,18 +270,21 @@ class GammitDisplay
 				program.projection.value = projection_matrix
 			end
 
-			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
+			var error = gl.error
+			assert error.is_ok else print "OpenGL error: {error}"
 
 			program.draw(draw_mode, 0, total_vertices/3)
 
-			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
+			error = gl.error
+			assert error.is_ok else print "OpenGL error: {error}"
 		end
 
 		# Make selection result as dirty
 		selection_calculated = false
 
 		# Check for lingering errors
-		assert gl.error.is_ok else print "OpenGL error: {gl.error}"
+		var error = gl.error
+		assert error.is_ok else print "OpenGL error: {error}"
 	end
 
 	# TODO extract the next 4 props to a its own module
@@ -428,11 +431,13 @@ class GammitDisplay
 				program.projection.value = projection_matrix
 			end
 
-			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
+			var error = gl.error
+			assert error.is_ok else print "OpenGL error: {error}"
 
 			program.draw(draw_mode, 0, vertices.length/3)
 
-			assert gl.error.is_ok else print "OpenGL error: {gl.error}"
+			error = gl.error
+			assert error.is_ok else print "OpenGL error: {error}"
 		end
 	end
 
