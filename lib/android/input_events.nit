@@ -75,6 +75,11 @@ private extern class NativeAndroidMotionEvent `{AInputEvent *`}
 	`}
 
 	fun action: AMotionEventAction `{ return AMotionEvent_getAction(recv); `}
+
+	#
+	private fun native_down_time: Int `{
+		return AMotionEvent_getDownTime(recv);
+	`}
 end
 
 private extern class AMotionEventAction `{ int32_t `}
@@ -149,6 +154,10 @@ class AndroidMotionEvent
 			return null
 		end
 	end
+
+	# Get the time when the user originally pressed down to start a stream of
+ 	# position events, in the java.lang.System.nanoTime() time base.
+	fun down_time: Int do return native.native_down_time
 end
 
 # A pointer event
