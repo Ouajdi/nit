@@ -1011,6 +1011,10 @@ class GLES
 
 	# OpenGL server-side capabilities
 	var capabilities = new GLCapabilities is lazy
+
+	fun check_framebuffer_status(target: GLEnum): GLFramebufferStatus `{
+		return glCheckFramebufferStatus(target);
+	`}
 end
 
 extern class GLArrayBuffer
