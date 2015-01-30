@@ -159,6 +159,7 @@ class List[E]
 	redef fun pop
 	do
 		var node = _tail
+		assert node != null
 		_tail = node.prev
 		node.prev = null
 		if _tail == null then
