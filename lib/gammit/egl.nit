@@ -107,6 +107,9 @@ redef class GammitDisplay
 	# Flip the screen after drawing
 	redef fun draw_all_the_things
 	do
+		# TODO keep?
+		egl_display.make_current(window_surface, window_surface, egl_context)
+
 		super
 		egl_display.swap_buffers(window_surface)
 	end
