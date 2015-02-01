@@ -670,6 +670,9 @@ class GLTexture
 end
 
 #
+fun glBindTexture(target: GLTextureTarget, id: Int) `{ glBindTexture(target, id); `}
+
+#
 # Default is 4.
 #
 # Require: `[1, 2, 4, 8].has(val)`
@@ -731,6 +734,9 @@ extern class GLTextureTarget
 	new cube_map `{ return GL_TEXTURE_CUBE_MAP; `}
 end
 
+#
+fun gl_TEXTURE_2D: GLTextureTarget `{ return GL_TEXTURE_2D; `}
+
 # A server-side capability
 class GLCap
 
@@ -773,8 +779,8 @@ class GLRenderbuffer
 	fun bind do bind_native(id)
 	private fun bind_native(id: Int) `{ glBindRenderbuffer(GL_RENDERBUFFER, id); `}
 
-
 	# TODO max samples GL_MAX_RENDERBUFFER_SIZE
+	# TODO set id before, or keep independent
 	fun storage(format: GLRenderbufferFormat, width, height: Int) `{
 		glRenderbufferStorage(GL_RENDERBUFFER, format, width, height);
 	`}
@@ -789,6 +795,7 @@ class GLRenderbuffer
 	# Must be `new GLFramebufferTarget`
 	fun attach(target: GLFramebufferTarget, attachment: GLAttachment)
 	do
+		print id
 		attach_native(target, attachment, id)
 	end
 
@@ -1012,9 +1019,63 @@ class GLES
 	# OpenGL server-side capabilities
 	var capabilities = new GLCapabilities is lazy
 
-	fun check_framebuffer_status(target: GLEnum): GLFramebufferStatus `{
+	# Completeness status of a framebuffer object
+	fun check_framebuffer_status(target: GLFramebufferTarget): GLFramebufferStatus `{
 		return glCheckFramebufferStatus(target);
 	`}
+
+	#
+	fun bind_framebuffer(i: Int) `{
+		glBindFramebuffer(GL_FRAMEBUFFER, i);
+	`}
+
+	fun bind_renderbuffer(i: Int) `{
+		glBindRenderbuffer(GL_RENDERBUFFER, i);
+	`}
+
+	fun framebuffer_binding: Int `{
+		int val;
+		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &val);
+		return val;
+	`}
+end
+
+# Return value of `gl.check_framebuffer_status`
+extern class GLFramebufferStatus
+	super GLEnum
+
+	# The framebuffer is complete
+	fun is_complete: Bool `{ return recv == GL_FRAMEBUFFER_COMPLETE; `}
+
+	# Not all framebuffer attachment points are framebuffer attachment complete
+	fun is_incomplete_attachment: Bool `{
+		return recv == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT;
+	`}
+
+	# Not all attached images have the same width and height
+	fun is_incomplete_dimension: Bool `{
+		return recv == GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS;
+	`}
+
+	# No images are attached to the framebuffer
+	fun is_incomplete_missing_attachment: Bool `{
+		return recv == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
+	`}
+
+	# The combination of internal formats of the attached images violates an implementation-dependent set of restrictions
+	fun is_unsupported: Bool `{
+		return recv == GL_FRAMEBUFFER_UNSUPPORTED;
+	`}
+
+	redef fun to_s
+	do
+		if is_complete then return "complete"
+		if is_incomplete_attachment then return "incomplete attachment"
+		if is_incomplete_dimension then return "incomplete dimension"
+		if is_incomplete_missing_attachment then return "incomplete missing attachment"
+		if is_unsupported then return "unsupported"
+		return "unknown"
+	end
 end
 
 extern class GLArrayBuffer
@@ -1054,7 +1115,7 @@ extern class GLFramebuffer
 		return ids;
 	`}
 
-	# Must be `new GLFramebufferTarget`
+	# Must be `new GLFramebufferTarget` in glesv2
 	fun bind(target: GLFramebufferTarget) `{
 		glBindFramebuffer(target, recv);
 	`}
@@ -1075,8 +1136,6 @@ extern class GLFramebufferTarget
 	super GLEnum
 
 	new `{ return GL_FRAMEBUFFER; `}
-	#new read `{ return GL_READ_FRAMEBUFFER; `}
-	#new draw `{ return GL_DRAW_FRAMEBUFFER; `}
 end
 
 # TODO render and framebuffer sets
