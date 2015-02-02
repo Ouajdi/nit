@@ -110,6 +110,13 @@ redef class App
 
 		app.poll_looper 0
 	end
+
+	redef fun window_resized
+	do
+		super
+
+		gammit.display.update_size
+	end
 end
 
 redef extern class ANativeWindow

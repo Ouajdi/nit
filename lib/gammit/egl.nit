@@ -96,6 +96,13 @@ redef class GammitDisplay
 		assert egl_bind_opengl_es_api else print "eglBingAPI failed: {egl_display.error}"
 	end
 
+	fun update_size
+	do
+		print "UPDATEING"
+		width = window_surface.attribs(egl_display).width
+		height = window_surface.attribs(egl_display).height
+	end
+
 	# Close the EGL context cleanly
 	fun close_egl
 	do
