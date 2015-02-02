@@ -13,6 +13,10 @@ d:
 	../../../../bin/nitc -o bin/mineit.apk src/android.nit -m ~/projects/nit/lib/android/debug.nit
 	adb install -r bin/mineit.apk
 
+v:
+	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit -m ~/projects/nit/lib/android/debug.nit
+	adb install -r bin/mineit_vr.apk
+
 android-release:
 	../../../../bin/nitc -o bin/mineit_vr.apk --release src/android_vr.nit
 
