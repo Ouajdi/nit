@@ -9,9 +9,10 @@ separator = ('.'|'/');
 Parser
 Ignored blank;
 
-multi_files = class_or_interface*;
+multi_files = source_declaration? class_declaration;
 
 class_or_interface = class_declaration | interface_declaration;
+source_declaration = 'Compiled from "' identifier+ '.java"';
 
 class_declaration = class_header '{' property_declaration* '}';
 
