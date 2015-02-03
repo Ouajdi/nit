@@ -26,12 +26,19 @@ class CodeGenerator
 	var file_out: OFStream
 	var java_class: JavaClass
 	var nb_params: Int
-	var module_name: String
+	var module_name: nullable String = null
 
 	init (file_name: String, jclass: JavaClass, with_attributes, comment: Bool)
 	do
 		file_out = new OFStream.open(file_name)
-		module_name = file_name.substring(0, file_name.search(".nit").from)
+
+		if file_name.has_suffix(".nit") then
+			# Output file ends with .nit, we expect it to be a valid name
+			module_name = file_name.substring(0, file_name.length - 4)
+
+			# Otherwise, it may be anything so do not declare a module
+		end
+
 		self.java_class = jclass
 		self.with_attributes = with_attributes
 		self.comment_unknown_types = comment
@@ -71,7 +78,11 @@ class CodeGenerator
 		end
 
 		file_out.write(gen_licence)
-		file_out.write("module {module_name}\n")
+
+		var module_name = module_name
+		if module_name != null then file_out.write "module {module_name}\n"
+
+		file_out.write("\n")
 		file_out.write(imports.join(""))
 		file_out.write("\n")
 		file_out.write(class_content.join(""))
