@@ -16,6 +16,7 @@
 module nitpick
 
 import frontend
+import doc::vim_autocomplete
 
 redef class ToolContext
 	# Modules to analyze, other modules will only get a shallow processing.
@@ -50,3 +51,4 @@ var mmodules = modelbuilder.parse_full(arguments)
 toolcontext.mmodules_to_check.add_all mmodules
 
 modelbuilder.run_phases
+toolcontext.run_global_phases(mmodules)
