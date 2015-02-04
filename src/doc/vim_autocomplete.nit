@@ -29,10 +29,11 @@ module vim_autocomplete
 
 import modelbuilder
 import phase
+import modelize::modelize_class
 
 redef class ToolContext
 	# Phase generating the files for the Vim plugin
-	var autocomplete_phase: Phase = new AutocompletePhase(self, null)
+	var autocomplete_phase: Phase = new AutocompletePhase(self, [modelize_class_phase])
 
 	# Shall we generate the files for the Vim plugin?
 	var opt_vim_autocomplete = new OptionBool(

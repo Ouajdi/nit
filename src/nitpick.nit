@@ -29,6 +29,8 @@ redef class ToolContext
 		if pd != null and not mmodules_to_check.has(pd.mclassdef.mmodule) then return
 		super
 	end
+
+	redef fun keep_going do return true
 end
 
 # Create a tool context to handle options and paths
@@ -37,6 +39,8 @@ toolcontext.tooldescription = "Usage: nitpick [OPTION]... <file.nit>...\nCollect
 
 # We do not add other options, so process them now!
 toolcontext.process_options(args)
+
+#toolcontext.keep_going = true
 
 # Get arguments
 var arguments = toolcontext.option_context.rest
