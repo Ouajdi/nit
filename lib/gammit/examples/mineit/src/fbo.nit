@@ -40,7 +40,7 @@ class SimpleFBO
 
 		# Create the FBO
 		fbo = new GLFramebuffer
-		fbo.bind(new GLFramebufferTarget)
+		glBindFramebuffer(gl_FRAMEBUFFER, fbo.id)
 
 		tex = new GLTexture
 		tex.bind

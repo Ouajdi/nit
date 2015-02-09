@@ -41,8 +41,8 @@ redef class GammitDisplay
 		var native_window = app.native_app_glue.window
 
 		setup_egl_display native_display
-		#select_egl_config(5, 6, 5, 0, 8, 0, 0)
-		select_egl_config(4, 4, 4, 0, 8, 0, 0)
+		select_egl_config(5, 6, 5, 0, 8, 0, 0)
+		#select_egl_config(4, 4, 4, 0, 8, 0, 0)
 
 		# Android only
 		var format = egl_config.attribs(egl_display).native_visual_id

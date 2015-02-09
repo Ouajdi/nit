@@ -304,6 +304,7 @@ class GammitDisplay
 		y = height - y
 
 		var data = once new NativeCByteArray(4)
+		gl_pixel_store_unpack_alignement 1
 		gl.read_pixels(x, y, 1, 1, new GLPixelFormat.rgba, new GLPixelType.unsigned_byte, data)
 		assert_no_gl_error
 
@@ -367,7 +368,7 @@ class GammitDisplay
 
 				var id = next_selection_id
 				selection_map[id] = entry
-				next_selection_id += 1
+				next_selection_id += 16
 
 				# Set color for selection EXTRACT
 				# TODO more than 255 items!
@@ -396,6 +397,7 @@ class GammitDisplay
 			end
 
 			# Prepare data for OpenGL ES
+			# TODO DO NOT USE THE set.vertext							
 			var vertex = set.vertex(program.color, colors)
 			program.color.array_pointer0(4, vertex)
 			program.color.array_enabled = true
@@ -414,7 +416,7 @@ class GammitDisplay
 
 			vertex = set.vertex(program.texture_coordinates, tex_coords)
 			program.texture_coordinates.array_pointer0(2, vertex)
-			program.texture_coordinates.array_enabled = true
+			program.texture_coordinates.array_enabled = texture != null
 
 			program.use_texture.value = texture != null
 			program.texture_coordinates.array_enabled = texture != null
@@ -1057,7 +1059,8 @@ class GammitSelectionProgram
 		{
 			gl_FragColor.rgb = v_color.rgb;
 
-			if(!use_texture || texture2D(vTex, v_texCoord).a >= 0.0 ) {
+			//if(!use_texture || texture2D(vTex, v_texCoord).a >= 0.0 ) {
+			if(use_texture && texture2D(vTex, v_texCoord).a >= 0.1 ) {
 				gl_FragColor.a = 1.0;
 			} else {
 				gl_FragColor.a = 0.0;

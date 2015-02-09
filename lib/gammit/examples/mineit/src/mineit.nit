@@ -210,7 +210,7 @@ redef class GammitApp
 		# You might want to grap all inputs too, but it also grabs alt-tab
 		#display.sdl_display.grab_input = true
 
-		show_splash_screen
+		#show_splash_screen
 
 		# Load the main texture
 		display.visibles.clear
@@ -287,6 +287,7 @@ redef class GammitApp
 		#sys.time_stats["drawing"].add stat_clock.lapse
 
 		sys.time_stats["frame_logic"].add frame_clock.lapse
+		display.selection_camera = camera.position
 	end
 
 	# Detect and react to collisions between the `camera` and the `world.blocks`

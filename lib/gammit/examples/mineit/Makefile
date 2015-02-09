@@ -9,6 +9,10 @@ linux:
 debug:
 	../../../../bin/nitc -o bin/fbo src/fbo.nit
 
+dd:
+	../../../../bin/nitc -o bin/mineit_vr src/vr.nit -m src/linux.nit
+	# -m src/optimized.nit
+
 d:
 	../../../../bin/nitc -o bin/mineit.apk src/android.nit -m ~/projects/nit/lib/android/debug.nit
 	adb install -r bin/mineit.apk

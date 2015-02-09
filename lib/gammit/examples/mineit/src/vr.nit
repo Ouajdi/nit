@@ -54,8 +54,6 @@ redef class GammitDisplay
 
 		gl.viewport(0, 0, width/2, height)
 
-
-
 		# from super
 
 		var back = background_color
@@ -314,7 +312,7 @@ redef class GammitDisplay
 			assert_no_gl_error
 		end
 
-		# Make selection result as dirty
+		# Mark selection result as dirty
 		selection_calculated = false
 
 		# Check for lingering errors
@@ -326,6 +324,8 @@ redef class GammitDisplay
 
 		# We reset the viewport for selections
 		gl.viewport(0, 0, width, height)
+
+		draw_selection_screen
 	end
 
 	redef fun load_texture_from_pixels(pixels, width, height, has_alpha)
