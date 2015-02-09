@@ -337,9 +337,9 @@ class GammitDisplay
 
 		return selection_map[id]
 	end
-				var r = 5
-				var g = 6
-				var b = 5
+				var r = 8
+				var g = 8
+				var b = 8
 
 	# HACK
 	var selection_camera: IPoint3d[Float] is noinit, writable

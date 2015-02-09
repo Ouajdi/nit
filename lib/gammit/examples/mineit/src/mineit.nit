@@ -420,6 +420,6 @@ redef class GammitDisplay
 	redef fun draw_all_the_things
 	do
 		super
-		draw_selection_screen
+		#draw_selection_screen
 	end
 end
