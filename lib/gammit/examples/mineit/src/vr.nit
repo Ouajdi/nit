@@ -54,8 +54,6 @@ redef class GammitDisplay
 
 		gl.viewport(0, 0, width/2, height)
 
-
-
 		# from super
 
 		var back = background_color
@@ -314,7 +312,7 @@ redef class GammitDisplay
 			assert_no_gl_error
 		end
 
-		# Make selection result as dirty
+		# Mark selection result as dirty
 		selection_calculated = false
 
 		# Check for lingering errors

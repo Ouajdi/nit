@@ -9,12 +9,16 @@ linux:
 debug:
 	../../../../bin/nitc -o bin/fbo src/fbo.nit
 
+dd:
+	../../../../bin/nitc -o bin/mineit_vr src/mineit.nit -m src/linux.nit
+	# -m src/optimized.nit
+
 d:
 	../../../../bin/nitc -o bin/mineit.apk src/android.nit -m ~/projects/nit/lib/android/debug.nit
 	adb install -r bin/mineit.apk
 
 v:
-	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit -m ~/projects/nit/lib/android/debug.nit
+	../../../../bin/nitc --semi-global -o bin/mineit_vr.apk src/android_vr.nit -m ~/projects/nit/lib/android/debug.nit
 	adb install -r bin/mineit_vr.apk
 
 android-release:

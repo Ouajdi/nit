@@ -164,7 +164,7 @@ redef class App
 		super
 
 		print "immersive -------------------------------------------------"
-		native_activity.immersive
+		#native_activity.immersive
 	end
 
 	redef fun window_resized

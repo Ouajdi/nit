@@ -18,6 +18,7 @@ module mineit
 import gammit::standalone
 import gammit::perf_stats
 import more_collections
+intrude import gammit::glesv2_display
 
 # A visible block in game
 class Block
@@ -287,6 +288,7 @@ redef class GammitApp
 		#sys.time_stats["drawing"].add stat_clock.lapse
 
 		sys.time_stats["frame_logic"].add frame_clock.lapse
+		display.selection_camera = camera.position
 	end
 
 	# Detect and react to collisions between the `camera` and the `world.blocks`
@@ -413,3 +415,11 @@ redef class GammitApp
 		world.blocks.remove_at(e.x, e.y, e.z)
 	end
 end
+
+#redef class GammitDisplay
+	#redef fun draw_all_the_things
+	#do
+		#super
+		#draw_selection_screen
+		#end
+	#end
