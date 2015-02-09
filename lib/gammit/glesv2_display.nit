@@ -312,9 +312,9 @@ class GammitDisplay
 		var rv = data[0].rshift(8-r)
 		var gv = data[1].rshift(8-g).lshift(r)
 		var bv = data[2].rshift(8-b).lshift(r+g)
-		if data[0].bin_and(2**(8-r)-1) >= (2**(8-r-1)) then rv += 1
-		if data[1].bin_and(2**(8-g)-1) >= (2**(8-g-1)) then gv += 1.lshift(r)
-		if data[2].bin_and(2**(8-b)-1) >= (2**(8-b-1)) then bv += 1.lshift(r+g)
+		if data[0].bin_and(2**(8-r)-1) > (2**(8-r-1)) then rv += 1
+		if data[1].bin_and(2**(8-g)-1) > (2**(8-g-1)) then gv += 1.lshift(r)
+		if data[2].bin_and(2**(8-b)-1) > (2**(8-b-1)) then bv += 1.lshift(r+g)
 		#var rv = data[0] / (2**(8-r))
 		#var gv = data[1] / (2**(8-g)) * (2**r)
 		#var bv = data[2] / (2**(8-b)) * (2**(r+g))
