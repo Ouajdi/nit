@@ -18,6 +18,7 @@ module mineit
 import gammit::standalone
 import gammit::perf_stats
 import more_collections
+intrude import gammit::glesv2_display
 
 # A visible block in game
 class Block
@@ -412,5 +413,13 @@ redef class GammitApp
 	do
 		display.remove e
 		world.blocks.remove_at(e.x, e.y, e.z)
+	end
+end
+
+redef class GammitDisplay
+	redef fun draw_all_the_things
+	do
+		super
+		draw_selection_screen
 	end
 end

@@ -10,7 +10,7 @@ debug:
 	../../../../bin/nitc -o bin/fbo src/fbo.nit
 
 dd:
-	../../../../bin/nitc -o bin/mineit_vr src/vr.nit -m src/linux.nit
+	../../../../bin/nitc -o bin/mineit_vr src/mineit.nit -m src/linux.nit
 	# -m src/optimized.nit
 
 d:

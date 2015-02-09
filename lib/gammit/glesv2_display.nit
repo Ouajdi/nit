@@ -304,15 +304,27 @@ class GammitDisplay
 		y = height - y
 
 		var data = once new NativeCByteArray(4)
-		gl_pixel_store_unpack_alignement 1
+		#gl_pixel_store_unpack_alignement 1
 		gl.read_pixels(x, y, 1, 1, new GLPixelFormat.rgba, new GLPixelType.unsigned_byte, data)
 		assert_no_gl_error
 
 		# Reconstitute ID from pixel color
-		var id = data[0] + data[1]*256 + data[2]*256*256
+		var rv = data[0].rshift(8-r)
+		var gv = data[1].rshift(8-g).lshift(r)
+		var bv = data[2].rshift(8-b).lshift(r+g)
+		if data[0].bin_and(2**(8-r)-1) >= (2**(8-r-1)) then rv += 1
+		if data[1].bin_and(2**(8-g)-1) >= (2**(8-g-1)) then gv += 1.lshift(r)
+		if data[2].bin_and(2**(8-b)-1) >= (2**(8-b-1)) then bv += 1.lshift(r+g)
+		#var rv = data[0] / (2**(8-r))
+		#var gv = data[1] / (2**(8-g)) * (2**r)
+		#var bv = data[2] / (2**(8-b)) * (2**(r+g))
+		var id = rv + gv + bv
 
 		# may be useful for debugging
-		# print "{id} {data[0]} {data[1]} {data[2]}"
+		print "out  > {id} = {data[0]} {data[1]} {data[2]}"
+		print "out  > {id} = {data[0].to_base(2, false)} {data[1].to_base(2, false)} {data[2].to_base(2, false)}"
+		print "out &> {data[0].bin_and(255-7)} {data[1].bin_and(255-3)} {data[2]*(2**(r+g))}"
+		print "out &> {id} = {rv.to_base(2, false)} {gv.to_base(2, false)} {bv.to_base(2, false)}"
 
 		# 0 is the background
 		if id == 0 then return null
@@ -325,6 +337,9 @@ class GammitDisplay
 
 		return selection_map[id]
 	end
+				var r = 5
+				var g = 6
+				var b = 5
 
 	# HACK
 	var selection_camera: IPoint3d[Float] is noinit, writable
@@ -332,7 +347,7 @@ class GammitDisplay
 	private fun draw_selection_screen
 	do
 		selection_calculated = true
-		var next_selection_id = 1
+		var next_selection_id = 120
 		selection_map.clear
 
 		var program = selection_program
@@ -344,6 +359,8 @@ class GammitDisplay
 		# Activate depth
 		# TODO remove?
 		gl.capabilities.depth_test.enable
+
+		var fdone = false
 
 		for set in visibles.sets do
 			var draw_mode = set.draw_mode
@@ -368,14 +385,22 @@ class GammitDisplay
 
 				var id = next_selection_id
 				selection_map[id] = entry
-				next_selection_id += 16
+				next_selection_id += 5
 
 				# Set color for selection EXTRACT
-				# TODO more than 255 items!
-				var p1 = id % 256
-				var p2 = id % (256**2) / 256
-				var p3 = id % (256**3) / 256**2
-				var c = [p1.to_f/255.0, p2.to_f/255.0, p3.to_f/255.0, 1.0]
+				var p1 = id.bin_and((2**r)-1)
+				var p2 = id.rshift(r).bin_and((2**g)-1)
+				var p3 = id.rshift(r+g).bin_and((2**b)-1)
+				#var p1 = id % (2**r)
+				#var p2 = id / (2**r) % (2**g)
+				#var p3 = id / (2**(r+g)) % (2**b)
+				if not fdone then
+					print "in> {p1.to_base(2, false)} {p2.to_base(2, false)} {p3.to_base(2, false)}"
+					fdone = true
+				end
+				var c = [p1.to_f/((2**r)-1).to_f,
+				         p2.to_f/((2**g)-1).to_f,
+				         p3.to_f/((2**b)-1).to_f, 1.0]
 				colors.add_all c*n_vertices
 
 				# Translation
@@ -1025,7 +1050,9 @@ class GammitSelectionProgram
 	end
 
 	# REMOVE!
-	var vertex_shader_source2 = """
+	redef var vertex_shader_source = """
+		precision highp float;
+
 		attribute vec4  position;
 		attribute vec4  color;
 		attribute vec4  translation;
@@ -1047,7 +1074,7 @@ class GammitSelectionProgram
 
 	#
 	redef var fragment_shader_source = """
-		precision mediump float;
+		precision highp float;
 
 		varying vec4 v_color;
 		varying vec2 v_texCoord;
