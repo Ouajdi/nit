@@ -26,15 +26,6 @@ import ::android::debug
 import mineit
 import optimized
 
-redef class MineitWorld
-
-	redef var ground_cover = [-8 .. 8]
-
-	redef var ground_depth = 20
-
-	redef var speed = 0.05
-end
-
 redef class GammitApp
 
 	redef fun setup_ui

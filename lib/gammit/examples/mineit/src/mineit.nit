@@ -59,7 +59,7 @@ class MineitWorld
 	var ground_depth = 8
 
 	# Player/camera speed
-	var speed = 0.08
+	var speed = 0.05
 
 	# Speed when falling (there's no acceleration for simplicity purpose)
 	var falling_speed = 0.3

@@ -25,10 +25,6 @@ intrude import optimized
 private fun save_file_path: Path do return once "save.mineit".to_path
 
 redef class MineitWorld
-	redef var ground_cover = [-8..8]
-
-	redef var ground_depth = 8
-
 	fun to_json: String
 	do
 		var coords = new Array[Float]
@@ -52,7 +48,7 @@ redef class MineitWorld
 			colors.add block.color.b
 			colors.add block.color.a
 		end
-		
+
 		return """
 {
     "coords": {{{coords.to_json}}},
@@ -63,26 +59,22 @@ redef class MineitWorld
 end
 
 redef class SimpleCamera
-	fun to_json: String
-	do
-		return """
+	fun to_json: String do return """
 {
     "px": {{{position.x}}},
     "py": {{{position.y}}},
     "pz": {{{position.z}}},
-    "ay": {{{pitch}}},
-    "ax": {{{yaw}}}
+    "pitch": {{{pitch}}},
+    "yaw": {{{yaw}}}
 }"""
-
-	end
 
 	fun update_from_json(json: JsonValue)
 	do
 		self.position.x = json["px"].to_f
 		self.position.y = json["py"].to_f
 		self.position.z = json["pz"].to_f
-		self.pitch = json["ay"].to_f
-		self.yaw = json["ax"].to_f
+		self.pitch = json["pitch"].to_f
+		self.yaw = json["yaw"].to_f
 	end
 end
 
@@ -90,21 +82,17 @@ redef class GammitApp
 
 	private fun save
 	do
-
 		var s = save_file_path.open_wo
 		s.write to_json
 		s.close
 	end
-	
+
 	#
-	fun to_json: String
-	do
-		return """
+	fun to_json: String do return """
 {
 "world": {{{world.to_json}}},
 "camera": {{{camera.to_json}}}
 }"""
-	end
 
 	private fun load: Bool
 	do
@@ -168,7 +156,7 @@ redef class GammitApp
 				return true
 			else if event.name == "l" then
 				# Load
-				print load
+				if not load then print "Loading failed"
 				return true
 			end
 		end

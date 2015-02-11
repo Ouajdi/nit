@@ -115,7 +115,7 @@ end
 
 redef class MineitWorld
 
-	redef var ground_cover = [-20 .. 20]
+	redef var ground_cover = [-8 .. 8]
 
 	redef var ground_depth = 20
 
