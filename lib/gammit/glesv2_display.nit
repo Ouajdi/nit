@@ -160,6 +160,12 @@ class GammitDisplay
 
 		gl.clear((new GLBuffer).color.depth)
 
+		draw_all_the_things_core
+	end
+
+	#
+	fun draw_all_the_things_core
+	do
 		# TODO better iterators and cover null textures!
 		for set in visibles.sets do
 			var draw_mode = set.draw_mode
