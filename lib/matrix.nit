@@ -46,6 +46,11 @@ class Matrix[N: Numeric]
 		end
 	end
 
+	fun copy: Matrix[N]
+	do
+		return new Matrix[N].from_array(width, height, items)
+	end
+
 	# Get the identity matrix
 	#
 	# Can only be a `Matrix[Float]`.

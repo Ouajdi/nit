@@ -33,10 +33,11 @@ redef class GammitDisplay
 	#
 	var vr_camera: nullable SimpleCamera = null
 
-	#display.projection_matrix = camera.mvp_matrix
-
 	# The aspect ration (in each eye) is half of the screen
 	redef fun aspect_ratio do return super / 2.0
+
+	# Distance between the eyes
+	var eye_separation: Float = 0.03125/8.0
 
 	redef fun draw_all_the_things
 	do
@@ -44,13 +45,6 @@ redef class GammitDisplay
 			super
 			return
 		end
-
-		# TODO tweak
-		var eye_sep = 0.02
-
-		var last_position = new Point3d[Float].from(vr_camera.position)
-
-		vr_camera.move(-eye_sep/2.0, 0.0, 0.0)
 
 		gl.viewport(0, 0, width/2, height)
 
@@ -63,10 +57,12 @@ redef class GammitDisplay
 
 		gl.clear((new GLBuffer).color.depth)
 
+		var center_projection = vr_camera.mvp_matrix
+		var projection_matrix = center_projection.copy
+		projection_matrix.translate(-eye_separation, 0.0, 0.0)
+
 		#================
 		# dup
-
-		var projection_matrix = vr_camera.mvp_matrix
 
 		# XY double
 
@@ -188,8 +184,8 @@ redef class GammitDisplay
 		# dup
 		#================
 
-		vr_camera.move(eye_sep, 0.0, 0.0)
-		projection_matrix = vr_camera.mvp_matrix
+		projection_matrix = center_projection.copy
+		projection_matrix.translate(eye_separation, 0.0, 0.0)
 
 		gl.viewport(width/2, 0, width/2, height)
 
@@ -317,7 +313,6 @@ redef class GammitDisplay
 
 		# Check for lingering errors
 		assert_no_gl_error
-		vr_camera.position = last_position
 
 		# dup
 		#=============
