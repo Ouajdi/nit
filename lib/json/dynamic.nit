@@ -68,7 +68,13 @@ class JsonValue
 	#
 	#     assert "0.0".to_json_value.to_f == 0.0
 	#     assert "123.456".to_json_value.to_f == 123.456
-	fun to_f: Float do return value.as(Float)
+	fun to_f: Float
+	do
+		var value = value
+		if value isa Float then return value
+		if value isa Int then return value.to_f
+		abort
+	end
 
 	# Is the value numeric?
 	#
