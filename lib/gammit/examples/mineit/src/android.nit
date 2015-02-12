@@ -22,6 +22,7 @@ end
 
 import gammit::android
 import ::android::debug
+import ::android::gamepad
 
 import mineit
 import optimized

@@ -26,6 +26,9 @@ end
 import gammit::android
 import ::android::cardboard
 import ::android::gamepad
+import ::app::data_store
+import ::android::shared_preferences
+import pthreads
 
 import vr
 import optimized
@@ -50,6 +53,13 @@ redef class SimpleCamera
 		var b = rotation_matrix[2, 2]
 		return -atan2(a, b)
 	end
+end
+
+redef class MineitWorld
+
+	#redef var ground_cover = [-4 .. 4]
+
+	#redef var ground_depth = 4
 end
 
 redef class GammitApp
@@ -92,29 +102,36 @@ redef class GammitApp
 
 	redef fun accept_event(event)
 	do
-		### Gamepad support
-
-
-		### Mouse support (probably over bluetooth) for people without a compatible gamepad
 		if event isa AndroidPointerEvent then
-			if event.pressed then # TODO use just_went_down
+			## Mouse support (probably over bluetooth) for people without a compatible gamepad
+			#if event.pressed then # TODO use just_went_down
 				# Move forward
 				#display.keys.downs.add "w"
-			else # event.depressed
+			#else # event.depressed
 				#if display.keys.downs.has("w") then display.keys.downs.remove "w"
-			end
-			return true
-		else if event isa AndroidKeyEvent then
-			print event.key_code
-			if event.is_back_key or event.is_a then
+			#end
+
+			return false
+		end
+
+		# Center of the screen
+		var cx = display.width/2
+		var cy = display.height/2
+
+		# Gamepad support
+		if event isa AndroidKeyEvent then
+			if event.is_a then
 				# mine
-				if event.is_down then act(display.width/2, display.height/2, true)
+				if event.is_down then act(cx, cy, true)
+				if persistence_thread != null then return false
 				return true
-			else if event.key_code == 125 or event.is_b then
+			else if event.is_b then
 				# place
-				if event.is_down then act(display.width/2, display.height/2, false)
+				if event.is_down then act(cx, cy, false)
+				if persistence_thread != null then return false
 				return true
 			else if event.is_dpad then
+				# move
 				var letter = null
 				if event.is_dpad_up then letter = "w"
 				if event.is_dpad_down then letter = "s"
@@ -126,15 +143,73 @@ redef class GammitApp
 					display.keys.downs.add letter
 				else
 					display.keys.downs.remove letter
-					#if display.keys.downs.has("w") then display.keys.downs.remove "w"
 				end
+			else if event.is_select then
+				if event.is_up then return false
+				if persistence_thread != null then return false
+
+				# load
+				var str = app.data_store["world"]
+				if str isa String then
+					print "----------------found {str.length} {str}"
+					load_from_json str
+				else
+					print "No saved game available"
+				end
+				#var t = new SavingThread(false)
+				#persistence_thread = t
+				#t.start
+				#return true
+			else if event.is_start then
+				if event.is_up then return false
+				if persistence_thread != null then return false
+
+				# save
+				var to_json = to_json
+				print "------------saving {to_json.length}: {to_json}"
+				print "------------saving 2: {to_json.substring_from(1024)}"
+				app.data_store["world"] = to_json
+				#var t = new SavingThread(true)
+				#persistence_thread = t
+				#t.start
+				#return true
 			end
-		else if event isa AndroidKeyEvent and event.is_back_key then
+		#else if event isa AndroidKeyEvent and event.is_back_key then
 			# Catch all back keys so it doesn't leave our app
-			return true
+			#return true
 		end
 
 		return super
+	end
+
+	#
+	var persistence_thread: nullable SavingThread = null
+end
+
+class SavingThread
+	super Thread
+
+	var saving: Bool
+	fun loading: Bool do return not saving
+
+	redef fun main
+	do
+		var gammit = app.gammit
+		if saving then
+			var to_json = gammit.to_json
+			print "------------saving {to_json.length}: {to_json}"
+			app.data_store["world"] = to_json
+		else
+			var str = app.data_store["world"]
+			if str isa String then
+				print "----------------found {str.length} {str}"
+				gammit.load_from_json str
+			else
+				print "No saved game available"
+			end
+		end
+		gammit.persistence_thread = null
+		return 0
 	end
 end
 

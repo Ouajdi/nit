@@ -61,11 +61,11 @@ end
 redef class SimpleCamera
 	fun to_json: String do return """
 {
-    "px": {{{position.x}}},
-    "py": {{{position.y}}},
-    "pz": {{{position.z}}},
-    "pitch": {{{pitch}}},
-    "yaw": {{{yaw}}}
+    "px": {{{position.x.to_json}}},
+    "py": {{{position.y.to_json}}},
+    "pz": {{{position.z.to_json}}},
+    "pitch": {{{pitch.to_json}}},
+    "yaw": {{{yaw.to_json}}}
 }"""
 
 	fun update_from_json(json: JsonValue)
@@ -104,7 +104,9 @@ redef class GammitApp
 
 	fun load_from_json(content: String): Bool
 	do
+		print "-------------0"
 		var json = content.to_json_value
+		print "-------------1"
 
 		if json.is_error then
 			print json.to_error
@@ -113,7 +115,9 @@ redef class GammitApp
 
 		# Clean old world
 		world = new MineitWorld
+		print "-------------a"
 		setup_ui
+		print "-------------b"
 
 		self.update_world_from_json json["world"]
 		self.camera.update_from_json json["camera"]
@@ -167,7 +171,16 @@ end
 
 redef universal Float
 	# Use a higher precision when saving floats
-	redef fun to_s do return to_precision(6)
+	fun to_json: String
+	do
+		#if self % 1.0 == 0.0 then return to_i.to_s
+		var str = to_precision(6)
+		var e = str.length - 1
+
+		while e > 0 and str.chars[e] == '0' do e -= 1
+
+		return str.substring(0, e)
+	end
 end
 
 redef class Array[E]
