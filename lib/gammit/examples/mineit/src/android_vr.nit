@@ -32,7 +32,7 @@ import pthreads
 
 import vr
 import optimized
-import persistent
+import persistent_binary
 
 redef class SimpleCamera
 	# Do not use `yaw` and `pitch`, the value will instead originate from the Cardboard API
