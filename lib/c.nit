@@ -153,6 +153,20 @@ extern class NativeCByteArray `{ unsigned char* `}
 	redef fun +(offset) `{ return recv + offset; `}
 end
 
+# An array of `float` in C (`float*`)
+extern class NativeCFloatArray `{ float* `}
+	super NativeCArray
+	redef type E: Float
+
+	# Allocate a new array of `size`
+	new(size: Int) `{ return calloc(size, sizeof(float)); `}
+
+	redef fun [](index) `{ return recv[index]; `}
+	redef fun []=(index, val) `{ recv[index] = val; `}
+
+	redef fun +(offset) `{ return recv + offset; `}
+end
+
 redef class NativeString
 	super NativeCArray
 	redef type E: Char
