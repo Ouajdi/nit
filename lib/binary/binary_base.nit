@@ -21,7 +21,7 @@ module binary_base
 intrude import standard::file
 import standard
 
-in "C" `{
+in "C Header" `{
 	#include <stdio.h>
 `}
 
