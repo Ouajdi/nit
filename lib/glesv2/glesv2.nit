@@ -25,6 +25,34 @@
 # The tool must be in PATH. It can be downloaded from
 # https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/
 #
+# # API structure
+#
+# Services offered by this module aims to be close to the C API while
+# preserving a style compatible with the Nit language.
+#
+# * `gl` prefixed functions of the C API are replaced by methods of the same
+# name, without the prefix, in snake case, accessible within the utility object
+# at `gl`.
+#
+#     Example: `glDrawTriangles` becomes `gl.draw_triangles`
+#
+# * Instances of `GLEnum` are represented by a set of classes prefixed by `GL`,
+# subclasses to the Nit class `GLEnum`. The Nit class represent the category
+# or the user method, named constructors access specific intances of the
+# enumeration.
+#
+#     Example: `GL_CLAMP_TO_EDGE` becomes `new GLTextureWrap::clamp_to_edge`
+#
+# * Some creative naming is applied when the name resulting from previous
+# conversions is not supported in Nit.
+#
+#     Example: `GL_TEXTURE_2D` becomes `new GLTextureTarget.flat`
+#
+# * Many precise methods for the same C function where different arguments
+# imply different argument types. Better static typing.
+#
+# # External links
+#
 # Most services of this module are a direct wrapper of the underlying
 # C library. If a method or class is not documented in Nit, refer to
 # the official documentation by the Khronos Group at:
@@ -37,6 +65,8 @@ module glesv2 is
 end
 
 import android::aware
+intrude import c
+import matrix
 
 in "C Header" `{
 	#include <GLES2/gl2.h>
@@ -296,42 +326,109 @@ class VertexArray
 	# Number of data per vertex
 	var count: Int
 
-	protected var glfloat_array: GLfloatArray
+	protected var glfloat_array: NativeGLfloatArray
 
 	init(index, count: Int, array: Array[Float])
 	do
 		self.index = index
 		self.count = count
-		self.glfloat_array = new GLfloatArray(array)
+		self.glfloat_array = new NativeGLfloatArray(array.length)
+		for k in [0..array.length[ do
+			glfloat_array[k] = array[k]
+		end
 	end
 
 	fun attrib_pointer do attrib_pointer_intern(index, count, glfloat_array)
-	private fun attrib_pointer_intern(index, count: Int, array: GLfloatArray) `{
+	private fun attrib_pointer_intern(index, count: Int, array: NativeGLfloatArray) `{
 		glVertexAttribPointer(index, count, GL_FLOAT, GL_FALSE, 0, array);
 	`}
 
-	fun enable do enable_intern(index)
-	private fun enable_intern(index: Int) `{ glEnableVertexAttribArray(index); `}
+	# Activate this ???
+	fun enable do enable_native(index)
+	private fun enable_native(index: Int) `{ glEnableVertexAttribArray(index); `}
 
-	fun draw_arrays_triangles do draw_arrays_triangles_intern(index, count)
-	private fun draw_arrays_triangles_intern(index, count: Int) `{
-		glDrawArrays(GL_TRIANGLES, index, count);
-	`}
+	# Desactivate this ???
+	fun disable do disable_native(index)
+	private fun disable_native(index: Int) `{ glDisableVertexAttribArray(index); `}
+
+	fun draw_arrays_triangles(from, count: Int) `{ glDrawArrays(GL_TRIANGLES, from, count); `}
+
+	fun draw_arrays_triangle_strip(from, count: Int) `{ glDrawArrays(GL_TRIANGLE_STRIP, from, count); `}
 end
 
-# Low level array of `Float`
-extern class GLfloatArray `{GLfloat *`}
-	new (array: Array[Float]) import Array[Float].length, Array[Float].[] `{
-		int i;
-		int len = Array_of_Float_length(array);
-		GLfloat *vertex_array = malloc(sizeof(GLfloat)*len);
-		for (i = 0; i < len; i ++) vertex_array[i] = Array_of_Float__index(array, i);
-		return vertex_array;
+redef universal Int
+	fun vertex_attrib4f(x, y, z, w: Float) `{
+		glVertexAttrib4f(recv, x, y, z, w);
 	`}
+
+	# `size` is components per vertex
+	fun vertex_attrib_pointer(size: Int, array: NativeGLfloatArray) `{
+		glVertexAttribPointer(recv, size, GL_FLOAT, GL_FALSE, 0, array);
+	`}
+
+	fun enable_vertex_attrib_array `{ glEnableVertexAttribArray(recv); `}
+
+	fun disable_vertex_attrib_array `{ glDisableVertexAttribArray(recv); `}
+
+	fun uniform_1i(index, x: Int) `{ glUniform1i(index, x); `}
+end
+#fun draw_arrays_triangles(from, count: Int) `{ glDrawArrays(GL_TRIANGLES, from, count); `}
+
+#fun draw_arrays_triangle_strip(from, count: Int) `{ glDrawArrays(GL_TRIANGLE_STRIP, from, count); `}
+
+# Low level array of `Float`
+class GLfloatArray
+	super CArray[Float]
+	redef type NATIVE: NativeGLfloatArray
+
+	#
+	init(size: Int)
+	is old_style_init do
+		native_array = new NativeGLfloatArray(size)
+		super size
+	end
+
+	#
+	new from(array: Array[Float])
+	do
+		var arr = new GLfloatArray(array.length)
+		arr.fill_from array
+		return arr
+	end
+
+	#
+	fun fill_from(array: Array[Float])
+	do
+		assert length >= array.length
+		for k in [0..array.length[ do
+			self[k] = array[k]
+		end
+	end
+end
+
+# An array of `int` in C (`int*`)
+extern class NativeGLfloatArray `{ GLfloat* `}
+	super NativeCArray
+	redef type E: Float
+
+	# Initialize a new NativeCIntArray of `size` elements.
+	new(size: Int) `{ return calloc(size, sizeof(GLfloat)); `}
+
+	redef fun [](index) `{ return recv[index]; `}
+	redef fun []=(index, val) `{ recv[index] = val; `}
+
+	redef fun +(offset) `{ return recv + offset; `}
 end
 
 # General type for OpenGL enumerations
 extern class GLEnum `{ GLenum `}
+
+	redef fun hash `{ return recv; `}
+
+	redef fun ==(o) do return o != null and is_same_type(o) and o.hash == self.hash
+end
+
+extern class GLUint`{GLuint`}
 
 	redef fun hash `{ return recv; `}
 
@@ -375,6 +472,79 @@ do
 	end
 end
 
+# Min at 16 per specification.
+fun max_vertex_attribs: Int do return gl.get_int(0x8864)
+
+# An OpenGL ES 2.0 2D texture
+class GLTexture
+	var id: Int = gen is lazy
+
+	fun gen: Int
+	do
+		var id = gen_native
+		self.id = id
+		return id
+	end
+
+	# Generate a single texture
+	#
+	# TODO optimize with a global texture pool
+	private fun gen_native: Int `{
+		int id;
+		glGenTextures(1, &id);
+		return id;
+	`}
+
+	fun bind do bind_native(id)
+	private fun bind_native(id: Int) `{ glBindTexture(GL_TEXTURE_2D, id); `}
+
+	fun active(offset: Int) `{ glActiveTexture(GL_TEXTURE0 + offset); `}
+
+	new rgby_square
+	do
+		gl_pixel_store_pack_alignement 1 # 1 byte per color
+		var tex = new GLTexture
+		tex.gen
+		tex.bind
+
+		var pixels = [255, 0,   0,
+		              0,   255, 0,
+		              0,   0,   255,
+		              255, 255, 0]
+		var cpixels = new CByteArray.from(pixels)
+
+		gl_tex_image2d(2, 2, cpixels.native_array, false)
+
+		gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.nearest)
+		gl.tex_parameter_mag_filter(gl_TEXTURE_2D, new GLTextureMagFilter.linear)
+
+		return tex
+	end
+
+	fun delete do delete_native(id)
+	private fun delete_native(id: Int) `{ glDeleteTextures(1, (GLuint*)&id); `}
+end
+
+#
+fun glBindTexture(target: GLTextureTarget, id: Int) `{ glBindTexture(target, id); `}
+
+#
+# Default is 4.
+#
+# Require: `[1, 2, 4, 8].has(val)`
+fun gl_pixel_store_pack_alignement(val: Int) `{ glPixelStorei(GL_PACK_ALIGNMENT, val); `}
+
+#
+#
+# Require: `[1, 2, 4, 8].has(val)`
+fun gl_pixel_store_unpack_alignement(val: Int) `{ glPixelStorei(GL_UNPACK_ALIGNMENT, val); `}
+
+fun gl_tex_image2d(width, height: Int, pixels: NativeCByteArray, has_alpha: Bool) `{
+	int format = has_alpha? GL_RGBA: GL_RGB;
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height,
+		0, format, GL_UNSIGNED_BYTE, pixels);
+`}
+
 # Texture minifying function
 #
 # Used by: `GLES::tex_parameter_min_filter`
@@ -383,6 +553,10 @@ extern class GLTextureMinFilter
 
 	new nearest `{ return GL_NEAREST; `}
 	new linear `{ return GL_LINEAR; `}
+	new nearest_mipmap_nearest `{ return GL_NEAREST_MIPMAP_NEAREST; `}
+	new linear_mipmap_nearest `{ return GL_LINEAR_MIPMAP_NEAREST; `}
+	new nearest_mipmap_linear `{ return GL_NEAREST_MIPMAP_LINEAR; `}
+	new linear_mipmap_linear `{ return GL_LINEAR_MIPMAP_LINEAR; `}
 end
 
 # Texture magnification function
@@ -393,10 +567,6 @@ extern class GLTextureMagFilter
 
 	new nearest `{ return GL_NEAREST; `}
 	new linear `{ return GL_LINEAR; `}
-	new nearest_mipmap_nearest `{ return GL_NEAREST_MIPMAP_NEAREST; `}
-	new linear_mipmap_nearest `{ return GL_LINEAR_MIPMAP_NEAREST; `}
-	new nearest_mipmap_linear `{ return GL_NEAREST_MIPMAP_LINEAR; `}
-	new linear_mipmap_linear `{ return GL_LINEAR_MIPMAP_LINEAR; `}
 end
 
 # Wrap parameter of a texture
@@ -415,10 +585,13 @@ end
 # Used by: `tex_parameter_*`
 extern class GLTextureTarget
 	super GLEnum
-
-	new flat `{ return GL_TEXTURE_2D; `}
-	new cube_map `{ return GL_TEXTURE_CUBE_MAP; `}
 end
+
+#
+fun gl_TEXTURE_2D: GLTextureTarget `{ return GL_TEXTURE_2D; `}
+
+#
+fun gl_TEXTURE_CUBE_MAP: GLTextureTarget `{ return GL_TEXTURE_CUBE_MAP; `}
 
 # A server-side capability
 class GLCap
@@ -439,6 +612,86 @@ class GLCap
 	redef fun hash do return val
 	redef fun ==(o) do return o != null and is_same_type(o) and o.hash == self.hash
 end
+
+#
+class GLRenderbuffer
+	var id: Int = gen is lazy
+
+	fun gen: Int
+	do
+		var id = gen_native
+		self.id = id
+		return id
+	end
+
+	# Generate a single renderbuffer
+	#
+	# TODO optimize with a global texture pool
+	private fun gen_native: Int `{
+		int id;
+		glGenRenderbuffers(1, &id);
+		return id;
+	`}
+
+	fun bind do bind_native(id)
+	private fun bind_native(id: Int) `{ glBindRenderbuffer(GL_RENDERBUFFER, id); `}
+
+	# TODO max samples GL_MAX_RENDERBUFFER_SIZE
+	# TODO set id before, or keep independent
+	fun storage(format: GLRenderbufferFormat, width, height: Int) `{
+		glRenderbufferStorage(GL_RENDERBUFFER, format, width, height);
+	`}
+
+	# Must be `new GLFramebufferTarget`
+	fun attach(target: GLFramebufferTarget, attachment: GLAttachment)
+	do
+		attach_native(target, attachment, id)
+	end
+
+	# TODO move to framebuffer?
+	fun attach_native(target: GLFramebufferTarget, attachment: GLAttachment, id: Int) `{
+		glFramebufferRenderbuffer(target, attachment, GL_RENDERBUFFER, id);
+	`}
+end
+
+# Format for a renderbuffer
+#
+# Used by `GLRenderbuffer::storage`
+extern class GLRenderbufferFormat
+	super GLEnum
+end
+
+# 4 red, 4 green, 4 blue, 4 alpha bits
+fun gl_RGBA4: GLRenderbufferFormat `{ return GL_RGBA4; `}
+
+# 5 red, 6 green, 5 blue bits
+fun gl_RGB565: GLRenderbufferFormat `{ return GL_RGB565; `}
+
+# 5 red, 5 green, 5 blue, 1 alpha bits
+fun gl_RGB_A1: GLRenderbufferFormat `{ return GL_RGB5_A1; `}
+
+# 16 depth bits
+fun gl_DEPTH_COMPNENT16: GLRenderbufferFormat `{ return GL_DEPTH_COMPONENT16; `}
+
+# 8 stencil bits
+fun gl_STENCIL_INDEX8: GLRenderbufferFormat `{ return GL_STENCIL_INDEX8; `}
+
+# Renderbuffer attachment point to a framebuffer
+#
+# Used by `GLRenderbuffer::attach`
+extern class GLAttachment
+	super GLEnum
+end
+
+# First color attachment point
+fun gl_COLOR_ATTACHMENT0: GLAttachment `{ return GL_COLOR_ATTACHMENT0; `}
+
+# Depth attachment point
+fun gl_DEPTH_ATTACHMENT: GLAttachment `{ return GL_DEPTH_ATTACHMENT; `}
+
+# Stencil attachment
+fun gl_STENCIL_ATTACHMENT: GLAttachment `{ return GL_STENCIL_ATTACHMENT; `}
+
 redef class Sys
 	private var gles = new GLES is lazy
 end
@@ -544,7 +797,7 @@ class GLES
 	#
 	# Foreign: glReadPixel
 	fun read_pixels(x, y, width, height: Int, format: GLPixelFormat, typ: GLPixelType, data: Pointer) `{
-		glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glReadPixels(x, y, width, height, format, typ, data);
 	`}
 
 	# Set the texture minifying function
@@ -582,6 +835,12 @@ class GLES
 
 	# OpenGL server-side capabilities
 	var capabilities = new GLCapabilities is lazy
+
+	fun framebuffer_binding: Int `{
+		int val;
+		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &val);
+		return val;
+	`}
 end
 
 # Bind `framebuffer` to a framebuffer target
@@ -617,6 +876,14 @@ fun gl_RENDERBUFFER: GLRenderbufferTarget `{ return GL_RENDERBUFFER; `}
 # Specify implementation specific hints
 fun glHint(target: GLHintTarget, mode: GLHintMode) `{
 	glHint(target, mode);
+`}
+
+# Generate and fill set of mipmaps for a texture object
+fun glGenerateMipmap(target: GLTextureTarget) `{ glGenerateMipmap(target); `}
+
+# Bind a named buffer object
+fun glBindBuffer(target: GLArrayBuffer, buffer: Int) `{
+	glBindBuffer(target, buffer);
 `}
 
 # Completeness status of a framebuffer object
@@ -685,6 +952,50 @@ fun gl_NICEST: GLHintMode `{ return GL_NICEST; `}
 
 # No preference
 fun gl_DONT_CARE: GLHintMode `{ return GL_DONT_CARE; `}
+
+# Target to which bind the buffer with `glBindBuffer`
+extern class GLArrayBuffer
+	super GLEnum
+end
+
+#
+fun gl_ARRAY_BUFFER: GLArrayBuffer `{ return GL_ARRAY_BUFFER; `}
+
+#
+fun gl_ELEMENT_ARRAY_BUFFER: GLArrayBuffer `{ return GL_ELEMENT_ARRAY_BUFFER; `}
+
+# Collection of textures or render targets
+#
+# One color, depth and stencil attachemns (total 3)
+#
+# * Singe-buffered
+extern class GLFramebuffer
+	super GLUint
+
+	new `{
+		GLuint ids;
+		glGenFramebuffers(1, &ids);
+		return ids;
+	`}
+
+	# Must be `new GLFramebufferTarget` in glesv2
+	fun bind(target: GLFramebufferTarget) `{
+		glBindFramebuffer(target, recv);
+	`}
+
+	fun attach_texture_2d(target: GLFramebufferTarget, attachment: GLAttachment,
+		texture_target: GLTextureTarget,  texture: GLTexture, level: Int)
+	do
+		native_attach_texture_2d(target, attachment, texture_target, texture.id, level)
+	end
+
+	fun native_attach_texture_2d(target: GLFramebufferTarget, attachment: GLAttachment,
+		texture_target: GLTextureTarget,  texture, level: Int) `{
+		glFramebufferTexture2D(target, attachment, texture_target, texture, level);
+	`}
+end
+
+# TODO render and framebuffer sets
 
 # Entry point to OpenGL server-side capabilities
 class GLCapabilities
@@ -871,4 +1182,33 @@ extern class GLBuffer `{ GLbitfield `}
 
 	# Add the stencil buffer to the returned buffer set
 	fun stencil: GLBuffer `{ return recv | GL_STENCIL_BUFFER_BIT; `}
+end
+
+extern class NativeGLfloatMatrix `{ GLfloat* `}
+
+	new alloc `{ return malloc(4*4*sizeof(GLfloat)); `}
+
+	fun set_identity
+	do
+		for i in 4.times do
+			for j in 4.times do
+				self[i, j] = if i == j then 1.0 else 0.0
+			end
+		end
+	end
+
+	fun [](x, y: Int): Float `{ return recv[y*4+x]; `}
+	fun []=(x, y: Int, val: Float) `{ recv[y*4+x] = val; `}
+end
+
+redef class Matrix[N]
+	# Copy content of this matrix to a `NativeGLfloatMatrix`
+	fun fill_native(native: NativeGLfloatMatrix)
+	do
+		for i in width.times do
+			for j in height.times do
+				native[i, j] = self[i, j].to_f
+			end
+		end
+	end
 end
