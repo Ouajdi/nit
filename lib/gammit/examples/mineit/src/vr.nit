@@ -130,7 +130,7 @@ redef class GammitDisplay
 		var texture = super
 
 		# Set the minifying function to `linear` to avoid most of the flickering between eyes
-		gl.tex_parameter_min_filter(new GLTextureTarget.flat, new GLTextureMinFilter.linear)
+		gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.linear)
 
 		return texture
 	end

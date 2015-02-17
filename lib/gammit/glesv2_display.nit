@@ -479,14 +479,14 @@ class GammitDisplay
 
 		gl_tex_image2d(width, height, pixels, has_alpha)
 
-		gl.tex_parameter_min_filter(new GLTextureTarget.flat, new GLTextureMinFilter.linear_mipmap_linear)
-		gl.tex_parameter_mag_filter(new GLTextureTarget.flat, new GLTextureMagFilter.nearest)
+		gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.linear_mipmap_linear)
+		gl.tex_parameter_mag_filter(gl_TEXTURE_2D, new GLTextureMagFilter.nearest)
 
-		gl.tex_parameter_wrap_s(new GLTextureTarget.flat, new GLTextureWrap.mirrored_repeat)
-		gl.tex_parameter_wrap_t(new GLTextureTarget.flat, new GLTextureWrap.mirrored_repeat)
+		gl.tex_parameter_wrap_s(gl_TEXTURE_2D, new GLTextureWrap.mirrored_repeat)
+		gl.tex_parameter_wrap_t(gl_TEXTURE_2D, new GLTextureWrap.mirrored_repeat)
 
 		glHint(gl_GENERATE_MIPMAP_HINT, gl_NICEST)
-		gl.generate_mipmap(new GLTextureTarget.flat)
+		glGenerateMipmap(gl_TEXTURE_2D)
 
 		assert_no_gl_error
 
