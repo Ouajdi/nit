@@ -1,7 +1,7 @@
-# Compile all alternative versions for GNU/Linux
-linux: assets/splash.png
-	mkdir -p bin
+all: linux android
 
+# Compile all alternative versions for GNU/Linux
+linux: bin desktop_assets
 	# Core and best alternatives
 	../../../../bin/nitc -o bin/mineit_core src/mineit.nit -m src/linux.nit
 	../../../../bin/nitc -o bin/mineit src/persistent_binary.nit -m src/linux.nit
@@ -13,25 +13,33 @@ linux: assets/splash.png
 	../../../../bin/nitc -o bin/mineit_vr src/vr.nit -m src/linux.nit
 
 # Compile 3 different versions for Android
-android: assets/splash.png assets/android_controls.png res/drawable-hdpi/icon.png libs/cardboard.jar
+android: bin/mineit.apk bin/mineit_vr.apk bin/mineit_vr_multi.apk
+
+bin/mineit.apk: bin android_assets $(shell nitls -M src/android.nit)
+	../../../../bin/nitc -o bin/mineit.apk src/android.nit
+	adb install -r bin/mineit.apk
+
+bin/mineit_vr.apk: bin android_assets $(shell nitls -M src/android_vr.nit)
+	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit
+	adb install -r bin/mineit_vr.apk
+
+bin/mineit_vr_multi.apk: bin android_assets $(shell nitls -M src/android_vr_multiplayer.nit)
+	../../../../bin/nitc -o bin/mineit.apk src/android_vr_multiplayer.nit
+	adb install -r bin/mineit_vr_multi.apk
+
+bin:
 	mkdir -p bin
 
-	../../../../bin/nitc -o bin/mineit.apk src/android.nit
-	../../../../bin/nitc -o bin/mineit_vr.apk src/android_vr.nit
-	../../../../bin/nitc -o bin/mineit_vr_multi.apk src/android_vr_multiplayer.nit
+desktop_assets: assets/splash.png
 
-	adb install -r bin/mineit.apk
-	adb install -r bin/mineit_vr.apk
-	adb install -r bin/mineit_vr_multi.apk
+android_assets: assets/splash.png assets/android_controls.png res/drawable-hdpi/icon.png libs/cardboard.jar
 
 # Splash screen
 assets/splash.png: art/splash.svg
-	mkdir -p assets
 	inkscape -f art/splash.svg -e assets/splash.png
 
 # Android control overlay
 assets/android_controls.png: art/android_controls.svg
-	mkdir -p assets
 	inkscape -f art/android_controls.svg -e assets/android_controls.png -y 0.0
 
 # Android icons
@@ -52,3 +60,8 @@ pub/512.png:
 v:
 	../../../../bin/nitc --semi-global -o bin/mineit_vr.apk src/android_vr.nit -m ~/projects/nit/lib/android/debug.nit
 	adb install -r bin/mineit_vr.apk
+
+.nit.apk: $(shell nitls -M src/android.nit)
+	../../../../bin/nitc -o $@ $<
+
+.SUFFIXES: .apk .nit
