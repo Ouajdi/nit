@@ -1,25 +1,93 @@
-
-# TODO use numeric safe operations
+# This file is part of NIT ( http://www.nitlanguage.org ).
 #
-# assert width > 0
-# assert height > 0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A rectangular array of `Numeric`
+#
+# Require: width > 0
+# Require: height > 0
 class Matrix[N: Numeric]
+
+	# Number of columns
 	var width: Int
+
+	# Number of rows
 	var height: Int
 
-	private var items: Array[N] is noinit
+	# Items of this matrix, rows by rows
+	private var items: Array[N] is lazy	do
+		var items = new Array[N]
 
-	init
-	do
-		items = new Array[N].filled_with(0.0, width*height)
+		# Ugly hack to get 0 in the domain of N
+		var zero: N
+		if items isa Array[Int] then
+			zero = 0
+		else
+			# Is either a Float or a general Numeric
+			zero = 0.0
+		end
+
+		return [zero]*(width*height)
 	end
 
+	# Create a matrix from an `Array[Array[N]]`
 	#
+	# Require: `not items.is_empty`
+	# Require: all rows are of the same length
+	#
+	# ~~~
+	# var array = [[1.0, 2.0],
+	#              [3.0, 4.0]]
+	# var matrix = new Matrix[Float].from(array)
+	# assert matrix.to_s == """
+	# 1.0 2.0
+	# 3.0 4.0"""
+	# ~~~
+	init from(items: Array[Array[N]])
+	do
+		assert not items.is_empty
+
+		init(items.first.length, items.length)
+
+		for j in height.times do assert items[j].length == width
+
+		for j in height.times do
+			for i in width.times do
+				self[j, i] = items[j][i]
+			end
+		end
+	end
+
+	# Create a matrix from an `Array[N]` composed of rows after rows
+	#
+	# Require: `width > 0 and height > 0`
+	# Require: `array.length >= width*height`
+	#
+	# ~~~
+	# var array = [1.0, 2.0,
+	#              3.0, 4.0]
+	# var matrix = new Matrix[Float].from_array(array)
+	# assert matrix.to_s == """
+	# 1.0 2.0
+	# 3.0 4.0"""
+	# ~~~
 	init from_array(width, height: Int, array: Array[N])
 	do
-		init(width, height)
-
+		assert width > 0
+		assert height > 0
 		assert array.length >= width*height
+
+		init(width, height)
 
 		for i in height.times do
 			for j in width.times do
@@ -28,32 +96,7 @@ class Matrix[N: Numeric]
 		end
 	end
 
-	#
-	init from(data: Array[Array[N]])
-	do
-		assert data.length > 0
-
-		init(data.first.length, data.length)
-
-		for j in height.times do
-			assert data[j].length == width
-		end
-
-		for j in height.times do
-			for i in width.times do
-				self[j, i] = data[j][i]
-			end
-		end
-	end
-
-	fun copy: Matrix[N]
-	do
-		return new Matrix[N].from_array(width, height, items)
-	end
-
-	# Get the identity matrix
-	#
-	# Can only be a `Matrix[Float]`.
+	# Create an identity matrix
 	#
 	# ~~~
 	# var i = new Matrix[Float].identity(3)
@@ -64,17 +107,28 @@ class Matrix[N: Numeric]
 	# ~~~
 	new identity(size: Int)
 	do
-		var mat = new Matrix[N](size, size)
-		assert mat isa Matrix[Float]
+		var matrix = new Matrix[N](size, size)
+
+		# Not so ugly hack to get 0 and 1 in the domain of N
+		var ref = matrix[0, 0]
+		var zero = ref.zero
+		var one = ref.zero.add(1)
+
 		for i in size.times do
 			for j in size.times do
-				mat[j, i] = if i == j then 1.0 else 0.0
+				matrix[j, i] = if i == j then one else zero
 			end
 		end
-		return mat
+		return matrix
 	end
 
-	# Get the value at column `x` and row `y`
+	# Create a new copy of this matrix
+	fun copy: Matrix[N]
+	do
+		return new Matrix[N].from_array(width, height, items)
+	end
+
+	# Get the value at row `x` and column `y`
 	#
 	# Require: `x >= 0 and x <= width and y >= 0 and y <= height`
 	fun [](y, x: Int): N
@@ -85,7 +139,7 @@ class Matrix[N: Numeric]
 		return items[x + y*width]
 	end
 
-	# Set the `value` at column `x` and row `y`
+	# Set the `value` at row `y` and column `x`
 	#
 	# Require: `x >= 0 and x <= width and y >= 0 and y <= height`
 	fun []=(y, x: Int, value: N)
@@ -96,8 +150,8 @@ class Matrix[N: Numeric]
 		items[x + y*width] = value
 	end
 
+	# Matrix product
 	#
-	# 
 	# Require: `width == other.height`
 	#
 	# ~~~
@@ -117,7 +171,6 @@ class Matrix[N: Numeric]
     #                                 [2.0],
     #                                 [3.0]])
 	# var c = a * b
-	# print c
 	# assert c.to_s == """
 	# 14.0
 	# 32.0"""
@@ -137,52 +190,11 @@ class Matrix[N: Numeric]
 		return out
 	end
 
-	#
-	#
-	# ~~~
-	# var i = new Matrix[Float].identity(3)
-	# var rot = new Matrix[Float].rotation(pi, 1.0, 0.0, 0.0)
-	# ~~~
-	new rotation(angle, x, y, z: Float) 
+	# Iterate over the values in this matrix
+	fun iterator: MapIterator[MatrixCoordinate, N]
 	do
-		var mat = new Matrix[N].identity(4)
-
-		var mag = (x*x + y*y + z*z).sqrt
-		var sin = angle.sin
-		var cos = angle.cos
-
-		if mag > 0.0 then
-			x = x / mag
-			y = y / mag
-			z = z / mag
-
-			var inv_cos = 1.0 - cos
-
-			mat[0, 0] = inv_cos*x*x + cos
-			mat[0, 1] = inv_cos*x*y - z*sin
-			mat[0, 2] = inv_cos*z*x + y*sin
-
-			mat[1, 0] = inv_cos*x*y + z*sin
-			mat[1, 1] = inv_cos*y*y + cos
-			mat[1, 2] = inv_cos*y*z - x*sin
-
-			mat[2, 0] = inv_cos*z*x - y*sin
-			mat[2, 1] = inv_cos*y*z + x*sin
-			mat[2, 2] = inv_cos*z*z + cos
-		end
-		return mat
+		return new MatrixIndexIterator[N](self)
 	end
-
-	fun rotate(angle, x, y, z: Float) 
-	do
-		assert self isa Matrix[Float]
-
-		var rotation = new Matrix[Float].rotation(angle, x, y, z)
-		var rotated = self * rotation
-		self.items = rotated.items
-	end
-
-	fun iterator: MapIterator[MatrixCoordinate, N] do return new MatrixIndexIterator[N](self)
 
 	redef fun to_s
 	do
@@ -197,10 +209,10 @@ class Matrix[N: Numeric]
 	redef fun hash do return items.hash
 end
 
-class MatrixIndexIterator[N: Numeric]
+private class MatrixIndexIterator[N: Numeric]
 	super MapIterator[MatrixCoordinate, N]
 
-	private var matrix: Matrix[N]
+	var matrix: Matrix[N]
 
 	redef var key = new MatrixCoordinate(0, 0)
 
@@ -225,17 +237,13 @@ class MatrixIndexIterator[N: Numeric]
 	end
 end
 
-#
+# Position key when iterating over the values of a matrix
 class MatrixCoordinate
-	#
+	# Index of the current column
 	var x: Int
 
-	#
+	# Index of the current row
 	var y: Int
 
 	redef fun to_s do return "({x},{y})"
 end
-
-#var i = new Matrix[Float].identity(3)
-#var rot = new Matrix[Float].rotation(0.25*pi, 0.0, 1.0, 0.0)
-#print rot
