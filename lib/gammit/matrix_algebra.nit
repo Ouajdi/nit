@@ -91,17 +91,17 @@ redef class Matrix[N]
 		return mat
 	end
 
-	# Apply a translation to this matrix
-	fun translate(dx, dy, dz: Float)
+	# Apply a translation by `x, y, z` to this matrix
+	fun translate(x, y, z: Float)
 	do
 		assert 0.0 isa N # This matrix accepts `Float`
 
 		for i in [0..3] do
-			self[3, i] += self[0, i].mul(dx) + self[1, i].mul(dy) + self[2, i].mul(dz)
+			self[3, i] += self[0, i].mul(x) + self[1, i].mul(y) + self[2, i].mul(z)
 		end
 	end
 
-	# Apply scaling to this matrix
+	# Apply scaling on `x, y, z` to this matrix
 	fun scale(x, y, z: Float)
 	do
 		assert self isa Matrix[Float]
