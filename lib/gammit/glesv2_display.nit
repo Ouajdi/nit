@@ -169,6 +169,7 @@ class GammitDisplay
 		for set in visibles.sets do
 			var draw_mode = set.draw_mode
 			var texture = set.gl_texture
+			if texture != null then print "texture {texture.id}: {glIsTexture(texture.id)}"
 
 			var program = set.program
 			if program == null then program = default_program
@@ -176,7 +177,7 @@ class GammitDisplay
 			program.use
 
 			var total_vertices = 0
-			if set.is_dirty then
+			if set.is_dirty or not set.vertex_cache.keys.has(program.color) then
 
 				set.is_dirty = false
 
@@ -508,6 +509,7 @@ class GammitGLTexture
 	var gl_texture: GLTexture
 
 	var width: Int
+
 	var height: Int
 
 	var coordinates: Array[Float] = [0.0, 0.0,
@@ -1051,29 +1053,6 @@ class GammitSelectionProgram
 		from_source(vertex_shader_source, fragment_shader_source)
 		super
 	end
-
-	# REMOVE!
-	redef var vertex_shader_source = """
-		precision highp float;
-
-		attribute vec4  position;
-		attribute vec4  color;
-		attribute vec4  translation;
-		attribute float scale;
-		attribute vec2  texCoord;
-
-		uniform  mat4 projection;
-
-		varying vec4 v_color;
-		varying vec2 v_texCoord;
-
-		void main()
-		{
-		  v_color = color;
-		  gl_Position = (vec4(position.xyz * scale, 1.0) + translation) * projection;
-		  v_texCoord = texCoord;
-		}
-		""" @ glsl_vertex_shader
 
 	#
 	redef var fragment_shader_source = """

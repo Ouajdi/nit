@@ -41,8 +41,9 @@ redef class GammitDisplay
 		var native_window = app.native_app_glue.window
 
 		setup_egl_display native_display
+
+		# We need 888 for selection with color
 		select_egl_config(8, 8, 8, 0, 8, 0, 0)
-		#select_egl_config(4, 4, 4, 0, 8, 0, 0)
 
 		# Android only
 		var format = egl_config.attribs(egl_display).native_visual_id
@@ -66,7 +67,7 @@ redef class GammitDisplay
 
 		var png_texture = asset.to_png_texture
 		assert png_texture != null
-		
+
 		return load_texture_from_pixels(png_texture.pixels,
 			png_texture.width, png_texture.height, png_texture.has_alpha) #sdl_image.amask)
 	end
@@ -106,9 +107,44 @@ redef class App
 
 	redef fun loop_body
 	do
-		super
-
 		app.poll_looper 0
+		print if paused then "paused" else "running"
+
+		if paused then
+			sys.nanosleep(0, 1000000)
+			return
+		end
+
+		super
+	end
+
+	var first_init = true
+	redef fun init_window
+	do
+		if not first_init then
+			print "egl: {gammit.display.egl_display.is_valid}!!!!!!!!!!!!!!!!!!!!!!!!"
+			#assert egl_display.is_valid else print egl_display.error
+
+		var native_display = egl_default_display
+		var native_window = app.native_app_glue.window
+
+		#gammit.display.setup_egl_display native_display
+
+		# We need 888 for selection with color
+		#gammit.display.select_egl_config(8, 8, 8, 0, 8, 0, 0)
+
+		# Android only
+		#var format = gammit.display.egl_config.attribs(gammit.display.egl_display).native_visual_id
+		#native_window.set_buffer_geometry format
+
+		gammit.display.setup_egl_context native_window
+
+		gammit.display.setup_gles
+			#setup(gammit.display.width, gammit.display.height)
+		end
+		first_init = false
+
+		super
 	end
 
 	redef fun window_resized
