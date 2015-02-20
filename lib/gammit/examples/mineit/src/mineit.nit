@@ -83,6 +83,7 @@ class MineitWorld
 		# glass (ish)
 		var block = new Block(1.0, 0.0, 0.0)
 		block.texture = texture.subtexture(tile_size*9, tile_size*2, tile_size, tile_size)
+		block.is_opaque = false
 		app.add block
 
 		# Gold top
@@ -95,7 +96,6 @@ class MineitWorld
 		# planks
 		block = new Block(1.0, -1.0, 0.0)
 		block.texture = texture.subtexture(tile_size*4, tile_size*0, tile_size, tile_size)
-		block.is_opaque = false
 		app.add block
 
 		# diamond
@@ -322,22 +322,42 @@ redef class GammitApp
 		var y = camera.position.y
 		var z = camera.position.z
 
-		var block_over = world.block_within(x, y+1.0, z)
 		var block_head = world.block_within(x, y, z)
-		var block_feet = world.block_within(x, y-1.0, z)
-		var block_under = world.block_within(x, y-2.0, z)
-
 		if block_head != null then
-			# Head blocked, cancel
-			camera.position = last_position
-		else if block_feet != null then
+			# Head blocked, try moving only on z
+			z = last_position.z
+			block_head = world.block_within(x, y, z)
+
+			if block_head != null then
+				# Try moving only on x
+				z = camera.position.z
+				x = last_position.x
+				block_head = world.block_within(x, y, z)
+
+				if block_head != null then
+					# Fully blocked
+					camera.position = last_position
+					return
+				end
+				camera.position.x = x
+			end
+			camera.position.z = z
+		end
+
+		var block_feet = world.block_within(x, y-1.0, z)
+		if block_feet != null then
+			var block_over = world.block_within(x, y+1.0, z)
 			if block_over != null then
 				# Block over head, cannot go up, cancel
 				camera.position = last_position
 			else
 				camera.position.y += 1.0
 			end
-		else if block_under != null then
+			return
+		end
+
+		var block_under = world.block_within(x, y-2.0, z)
+		if block_under != null then
 			var ty = block_under.y + 2.0
 			if camera.position.y > ty then
 				# Fall
@@ -359,6 +379,7 @@ redef class GammitApp
 	do
 		# HACK
 		display.selection_camera = camera.position
+
 		var selected = display.visible_at(x, y)
 		if selected != null and display.visibles.has(selected) then
 
@@ -371,8 +392,6 @@ redef class GammitApp
 			var sx = selected.x.to_f
 			var sy = selected.y.to_f
 			var sz = selected.z.to_f
-
-			print "{sx} {sy} {sz}"
 
 			if mine then
 				# Mine block
