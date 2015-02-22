@@ -63,7 +63,11 @@ redef class Opengles1Display
 			return 0;
 		}
 
+#ifdef __LINUX__
 		mnit_window = (EGLNativeWindowType)mnit_sys_info.info.x11.window;
+#elif __WIN32__
+		mnit_window = (EGLNativeWindowType)mnit_sys_info.info.win.window;
+#endif
 
 		return 0;
 	`}
