@@ -24,14 +24,16 @@ import tileset
 
 # General control class
 class Control
-	# draw control
+	# Draw `self` to `display`
 	fun draw(display: Display) do end
 
 	# try to accept input
 	# returns true if intercepted
 	fun input(screen: Screen, event: InputEvent): Bool do return false
 
-	var parent: nullable ContainerControl = null
+	type PARENT: ContainerControl
+
+	var parent: nullable PARENT = null
 end
 
 # Clickable control
@@ -49,22 +51,22 @@ class SelectableControl
 	super Control
 
 	var selected: Bool = false
-	
+
 	fun select(screen: Screen)
 	do
 		if screen.selected != null then screen.selected.selected = false
-		
+
 		selected = true
 		screen.selected = self
 	end
-	
+
 	fun unselect(screen: Screen)
 	do
 		if screen.selected != null
 		then
 			screen.selected.selected = false
 		end
-		
+
 		selected = false
 		screen.selected = null
 	end
@@ -74,12 +76,12 @@ end
 class ContainerControl
 	super Control
 	super List[Control]
-	
+
 	redef fun draw(display)
 	do
 		for control in self do control.draw(display)
 	end
-	
+
 	redef fun input(screen, event)
 	do
 		var intercepted = false
@@ -127,14 +129,14 @@ class Button
 	var receiver: HitReceiver
 
 	fun on_click(event: InputEvent) do receiver.hit(self, event)
-	
+
 	redef fun input(screen, event)
 	do
 		if event isa PointerEvent and within(event) then
 			if event.depressed then on_click(event)
 			return true
 		end
-		
+
 		return false
 	end
 end
@@ -145,14 +147,14 @@ class KeyCatcher
 
 	var receiver: HitReceiver
 	var keys: Array[String] # TODO change to char
-	
+
 	redef fun input(screen, event)
 	do
 		if event isa KeyEvent and event.to_c != null and keys.has(event.to_c.to_s) then
 			receiver.hit(self, event)
 			return true
 		end
-		
+
 		return false
 	end
 end
@@ -164,15 +166,15 @@ class RectangleControl
 	var left: Int = 0 is writable
 	var width: Int = 0
 	var height: Int = 0
-	
+
 	fun right: Int do return left + width
 	fun right=(v: Int) do width = v-left
 	fun bottom: Int do return top + height
 	fun bottom=(v: Int) do height = v-top
-	
+
 	fun center_x: Int do return left + width / 2
 	fun center_y: Int do return top + height / 2
-	
+
 	fun set_anchor(left, top: Int): SELF
 	do
 		self.left = left
@@ -190,7 +192,7 @@ class RectangleControl
 
 		return self
 	end
-	
+
 	redef fun within(event)
 	do
 		return event.y.to_i > top and event.y.to_i < bottom and
@@ -211,20 +213,20 @@ class RectangleMenu
 	super ContainerControl
 
 	var padding: Int = 8
-	
+
 	redef fun top=(t: Int)
 	do
 		var d = t - top
 		for c in self do if c isa RectangleControl then c.top += d
-		
+
 		super
 	end
-	
+
 	redef fun left=(l: Int)
 	do
 		var d = l - left
-		for c in self do if c isa RectangleControl then c.left += d 
-	
+		for c in self do if c isa RectangleControl then c.left += d
+
 		super
 	end
 
@@ -233,10 +235,10 @@ class RectangleMenu
 		assert ctrl isa RectangleControl
 
 		insert_in_menu(ctrl)
-		
+
 		super
 	end
-	
+
 	# adapts current control size to all buttons
 	# adpts button top left to this control
 	#
@@ -245,9 +247,9 @@ class RectangleMenu
 	do
 		ctrl.top = bottom
 		ctrl.left = left + padding
-		
+
 		height += ctrl.height + padding
-		
+
 		if width < ctrl.width + 2*padding then width = ctrl.width + 2*padding
 	end
 
@@ -266,26 +268,26 @@ class RectangleMenu
 		self.height = height
 		self.width = width + 2 * padding
 	end
-	
+
 	redef fun clear
 	do
 		height = padding
-		
+
 		super
 	end
-	
+
 	redef fun draw(display)
 	do
 		super
-		
+
 		draw_back(display)
-		
+
 		# TODO
 		# below is a hack
 		# should be handled by a call to super:(
 		for control in self do control.draw(display)
 	end
-	
+
 	redef fun input(screen, event)
 	do
 		# var intercepted = super # TODO a call to super should work here
@@ -295,11 +297,11 @@ class RectangleMenu
 			intercepted = true
 			break
 		end
-		
+
 		if not intercepted and event isa PointerEvent and within(event) then
 			intercepted = true
 		end
-		
+
 		return intercepted
 	end
 
@@ -316,18 +318,18 @@ class HorizontalMenu
 	do
 		ctrl.top = top + padding
 		ctrl.left = right
-		
+
 		width += ctrl.width + padding
-		
+
 		if height < ctrl.height + 2*padding then
 			height = ctrl.height + 2*padding
 		end
 	end
-	
+
 	redef fun clear
 	do
 		width = padding
-		
+
 		super
 	end
 end
@@ -337,7 +339,7 @@ class TextRectangleButton
 
 	var text: String is writable
 	var font: TileSetFont
-	
+
 	redef fun draw(display)
 	do
 		draw_back(display)
@@ -349,27 +351,27 @@ end
 class TextInputControl
 	super RectangleControl
 	super SelectableControl
-	
+
 	var receiver: HitReceiver
 
 	var label_text: String
-	
+
 	var input_img: nullable Image = null
 	var input_text: String = ""
-	
+
 	var font: TileSetFont
-	
+
 	var padding: Int = 8
-	
+
 	fun text: String do return input_text
 	fun text= (t: String)
 	do
 		input_text = t
 		input_img = null
 	end
-	
+
 	private fun visible_text: String do return input_text
-	
+
 	redef fun draw(display)
 	do
 		draw_back(display)
@@ -378,7 +380,7 @@ class TextInputControl
 
 		if not input_text.is_empty then display.text(visible_text, font, left+16, top+32)
 	end
-	
+
 	redef fun input(screen, event)
 	do
 		if event isa KeyEvent then
@@ -410,10 +412,10 @@ class TextInputControl
 				return true
 			end
 		end
-		
+
 		return false
 	end
-	
+
 	# is this a recognized character?
 	fun accepts_char(char: Char): Bool
 	do
@@ -424,16 +426,16 @@ end
 # Hidden text input
 class PasswordInputControl
 	super TextInputControl
-	
+
 	redef fun visible_text do return "*" * input_text.length
 end
 
 # Text input limited to numbers
 class NumberInputControl
 	super TextInputControl
-	
+
 	redef fun accepts_char(char) do return char >= '0' and char <= '9'
-	
+
 	fun number: nullable Int
 	do
 		if input_text.is_empty then
@@ -445,7 +447,7 @@ end
 # Simple separator control (mainly for RectangleMenu and HorizontalMenu)
 class Separator
 	super RectangleControl
-	
+
 	redef fun draw(display) do draw_back(display)
 end
 
@@ -454,7 +456,7 @@ class ImageRectangleButton
 	super RectangleButton
 
 	var img: Image
-	
+
 	redef fun draw(display)
 	do
 		var t = top.to_f
@@ -463,7 +465,7 @@ class ImageRectangleButton
 		var r = right.to_f
 
 		display.blit_stretched(img, l, b, l, t, r, t, r, b)
-		
+
 		super
 	end
 end
