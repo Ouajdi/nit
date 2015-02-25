@@ -525,6 +525,8 @@ class GLTexture
 	private fun delete_native(id: Int) `{ glDeleteTextures(1, (GLuint*)&id); `}
 end
 
+fun glIsTexture(id: Int): Bool `{ return glIsTexture(id); `}
+
 #
 fun glBindTexture(target: GLTextureTarget, id: Int) `{ glBindTexture(target, id); `}
 
