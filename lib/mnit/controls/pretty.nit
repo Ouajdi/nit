@@ -37,12 +37,9 @@ class BorderImageSet
 	# center
 	var c: Image
 
-	init default (app: App)
-	do
-		init(app, "controls/back")
-	end
+	init default do from_image("controls/default.png", 8)
 
-	init (app: App, path: String)
+	init(path: String)
 	do
 		tl = app.load_image("{path}/tl.png")
 		tr = app.load_image("{path}/tr.png")
@@ -54,12 +51,30 @@ class BorderImageSet
 		r = app.load_image("{path}/r.png")
 		c = app.load_image("{path}/c.png")
 	end
+
+	init from_image(path: String, tile_size: Int)
+	do
+		var ts = tile_size
+		var img = app.load_image(path)
+
+		assert img.width >= 3*ts and img.height >= 3*ts
+
+		tl = img.subimage(0, 0, ts, ts)
+		tr = img.subimage(2*ts, 0, ts, ts)
+		bl = img.subimage(0, 2*ts, ts, ts)
+		br = img.subimage(2*ts, 2*ts, ts, ts)
+		t = img.subimage(ts, 0, ts, ts)
+		b = img.subimage(ts, 2*ts, ts, ts)
+		l = img.subimage(0, ts, ts, ts)
+		r = img.subimage(2*ts, ts, ts, ts)
+		c = img.subimage(ts, ts, ts, ts)
+	end
 end
 
 redef class RectangleControl
 
 	# border images specific to this control
-	var border_images: nullable BorderImageSet = null is writable
+	var border_images: nullable BorderImageSet = app.border_images is lazy, writable
 
 	# a better draw back implementation using border images when possible
 	redef fun draw_back(display)
@@ -68,17 +83,17 @@ redef class RectangleControl
 		if bi == null then bi = app.border_images
 
 		if bi != null then
-			var s = 8 # images size TODO make dynamic
+			var s = bi.tl.width # TODO do better
 			var r = right - s # inside border positions
 			var l = left + s
 			var t = top + s
 			var b = bottom - s
 
 			# corners
-			display.blit(bi.tl, left, top)
-			display.blit(bi.tr, r, top)
-			display.blit(bi.bl, left, b)
-			display.blit(bi.br, r, b)
+			display.blit_scaled(bi.tl, left, top, s, s)
+			display.blit_scaled(bi.tr, r, top, s, s)
+			display.blit_scaled(bi.bl, left, b, s, s)
+			display.blit_scaled(bi.br, r, b, s, s)
 
 			# sides
 			display.blit_stretched(bi.t, r.to_f, top.to_f, r.to_f, t.to_f, l.to_f, t.to_f, l.to_f, top.to_f)
@@ -98,9 +113,9 @@ end
 redef class App
 	fun load_images_for_controls
 	do
-		border_images = new BorderImageSet.default(app)
+		border_images = new BorderImageSet.default
 	end
 
-	# the default border images 
+	# the default border images
 	var border_images: nullable BorderImageSet = null
 end
