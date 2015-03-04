@@ -297,3 +297,10 @@ fun srand_from(x: Int) is extern "kernel_Any_Any_srand_from_1"
 # This method is automatically invoked at the begin of the program, so usually, there is no need to manually invoke it.
 # The only exception is in conjunction with `srand_from` to reset the pseudo-random generator.
 fun srand is extern "kernel_Any_Any_srand_0"
+
+# Linear interpolation between `a` and `b` at `weight` out of `1.0`
+#
+# ~~~
+# assert lerp(0, 1.0, 0.5) == 0.5
+# ~~~
+#fun lerp(a, b, weight: Float): Float do return (1.0 - weight) * a + weight * b
