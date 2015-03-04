@@ -4,7 +4,7 @@ all: linux android
 linux: bin desktop_assets
 	# Core and best alternatives
 	../../../../bin/nitc -o bin/mineit_core src/mineit.nit -m src/linux.nit
-	../../../../bin/nitc -o bin/mineit src/persistent_binary.nit -m src/linux.nit
+	../../../../bin/nitc -o bin/mineit src/persistent_binary.nit -m src/linux.nit -m src/better_generation.nit
 
 	# More alternatives (multiplayer, VR and optimized)
 	../../../../bin/nitc -o bin/mineit_optimized src/optimized.nit -m src/linux.nit
@@ -58,7 +58,7 @@ pub/512.png:
 	../../../../contrib/inkscape_tools/bin/svg_to_icons art/icon.svg --large --out pub/
 
 v:
-	../../../../bin/nitc --semi-global -o bin/mineit_vr.apk src/android_vr.nit -m ~/projects/nit/lib/android/debug.nit
+	../../../../bin/nitc --semi-global -o bin/mineit_vr.apk src/android_vr.nit -m ~/projects/nit/lib/android/debug.nit -m src/better_generation.nit
 	adb install -r bin/mineit_vr.apk
 
 .nit.apk: $(shell nitls -M src/android.nit)

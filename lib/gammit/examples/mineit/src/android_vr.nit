@@ -32,8 +32,17 @@ import ::android::shared_preferences
 import vr
 import optimized
 import persistent_binary
+import better_generation
 
 redef fun save_file_path do return once "/mnt/sdcard/world.mineit".to_path
+
+redef class MineitWorld
+	redef var n_trees = 16
+
+	redef fun ground_cover do return [-16..16]
+
+	redef fun ground_depth do return 8
+end
 
 redef class SimpleCamera
 	# Do not use `yaw` and `pitch`, the value will instead originate from the Cardboard API

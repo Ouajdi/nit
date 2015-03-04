@@ -21,8 +21,8 @@ import mineit
 redef class Sys
 	private fun left: Int do return 0
 	private fun right: Int do return 1
-	private fun top: Int do return 2
-	private fun bottom: Int do return 3
+	private fun bottom: Int do return 2
+	private fun top: Int do return 3
 	private fun front: Int do return 4
 	private fun back: Int do return 5
 end
@@ -48,8 +48,8 @@ class VisibleFace
 		var vv = new Array[Array[Float]]
 		if side == sys.left then vv = [e, g, c, e, c, a]
 		if side == sys.right then vv = [b, d, h, b, h, f]
-		if side == sys.top then vv = [e, a, b, e, b, f]
-		if side == sys.bottom then vv = [c, g, h, c, h, d]
+		if side == sys.bottom then vv = [e, a, b, e, b, f]
+		if side == sys.top then vv = [c, g, h, c, h, d]
 		if side == sys.front then vv = [a, c, d, a, d, b]
 		if side == sys.back then vv = [f, h, g, f, g, e]
 
@@ -60,8 +60,11 @@ class VisibleFace
 end
 
 redef class Block
+	#
+	var side_texture: nullable Texture = null is writable
+
 	# The 6 direct neighbors to `self`
-	fun neighbors: Array[Array[Float]] is lazy do
+	var neighbors: Array[Array[Float]] is lazy do
 		return [
 				[x-1.0, y, z],
 		        [x+1.0, y, z],
@@ -87,10 +90,18 @@ redef class Block
 			var face = faces[side]
 			if face == null then
 				face = new VisibleFace(x, y, z, side, self)
-				face.texture = texture
+				faces[side] = face
+
 				face.color = color
 				face.scale = scale
-				faces[side] = face
+				face.category = category
+
+				if side_texture == null or side == sys.top then
+					face.texture = texture
+				else
+					face.texture = side_texture
+					face.color = new Color.white
+				end
 			end
 
 			if exposed and not display.visibles.has(face) then
@@ -104,8 +115,6 @@ redef class Block
 	private fun remove_faces_from(display: GammitDisplay)
 	do
 		for f in [0..6[ do
-			#var exposed = visible_faces[f]
-			#if exposed then
 			var face = faces[f]
 			if face != null and display.visibles.has(face) then
 				display.remove(face)
@@ -116,9 +125,11 @@ end
 
 redef class MineitWorld
 
-	redef var ground_cover = [-8 .. 8]
+	# Dimensions of the floating island
+	redef var ground_cover = [-64..64]
 
-	redef var ground_depth = 20
+	# Depth of the floating island
+	redef var ground_depth = 8
 
 	# Block list ...
 	private var block_list = new HashSet[Block]
@@ -126,8 +137,6 @@ redef class MineitWorld
 	# May this block be seen by the player?
 	private fun is_hidden(block: Block): Bool
 	do
-		# Tolerated BUG: cubes with a transparent texture allows the user to see _hidden_ blocks.
-
 		# Check whether all its sides are covered
 		for coords in block.neighbors do
 			var x = coords[0]

@@ -29,6 +29,7 @@ class Block
 	redef var y: Float
 	redef var z: Float
 
+	# Is `self` fully opaque?
 	var is_opaque = true is writable
 
 	init
@@ -53,24 +54,27 @@ class MineitWorld
 	var blocks = new HashMap3[Float, Float, Float, Block]
 
 	# Dimensions of the floating island
-	var ground_cover: Range[Int] = [-7..7]
+	var ground_cover: Range[Int] = [-20..20]
 
 	# Depth of the floating island
-	var ground_depth = 8
+	var ground_depth = 12
 
 	# Player/camera speed
 	var speed = 0.05
 
 	# Speed when falling (there's no acceleration for simplicity purpose)
-	var falling_speed = 0.3
+	var falling_speed = 0.0
+
+	# 
+	var gravity: Float = 0.00981
 
 	# Reachable range of actions
-	var action_reach: Float = 5.0
+	var action_reach = 5.0
 
 	# Generate the default world
 	fun generate(display: GammitDisplay, app: GammitApp)
 	do
-		var texture = app.texture
+		var texture = app.terrain_texture
 		var tile_size = app.tile_size
 
 		# Rock brick
@@ -80,7 +84,7 @@ class MineitWorld
 			app.add block
 		end
 
-		# glass (ish)
+		# Glass (ish)
 		var block = new Block(1.0, 0.0, 0.0)
 		block.texture = texture.subtexture(tile_size*9, tile_size*2, tile_size, tile_size)
 		block.is_opaque = false
@@ -144,21 +148,32 @@ class MineitWorld
 		# Tree
 		var leaves = texture.subtexture(tile_size*4, tile_size*3, tile_size, tile_size)
 		var trunk = texture.subtexture(tile_size*4, tile_size*1, tile_size, tile_size)
-		for x in [0..2] do
-			for y in [0..2] do
-				for z in [0..2] do
-					block = new Block(3.0+x.to_f, 2.0+y.to_f, -3.0-z.to_f)
-					block.color = new Color.green
-					block.texture = leaves
-					block.is_opaque = false
-					app.add block
+
+		# Place many trees
+		for pos in [[3, 5], [4, -4], [-2, 8], [-5, -4],
+			[8, 2], [10, 7], [8, -6], [10, -2],
+			[-4, 3], [-8, 10], [-7, -8], [-2, -9],
+			[1, -6], [-12, 0]] do
+
+			# Leaves
+			for x in [-1..1]+pos[0] do
+				for y in [-1..1] do
+					for z in [-1..1]+pos[1] do
+						block = new Block(x.to_f, 3.0+y.to_f, z.to_f)
+						block.color = new Color.green
+						block.texture = leaves
+						block.is_opaque = false
+						app.add block
+					end
 				end
 			end
-		end
-		for y in [-1..1] do
-			block = new Block(4.0, y.to_f, -4.0)
-			block.texture = trunk
-			app.add block
+
+			# Trunc
+			for y in [-1..1] do
+				block = new Block(pos[0].to_f, y.to_f, pos[1].to_f)
+				block.texture = trunk
+				app.add block
+			end
 		end
 	end
 
@@ -193,37 +208,52 @@ redef class GammitApp
 	var world: MineitWorld is writable
 
 	# Main terrain texture
-	var texture: GammitGLTexture
+	var terrain_texture = new Texture("terrain.png")
 
-	# Dimension of a tile in `texture`
-	var tile_size: Int
+	# Dimension of a tile in `terrain_texture`
+	var tile_size = 16
+
+	private var splash_texture = new Texture("splash.png")
+
+	private var crosshair_texture = new Texture("crosshair.png")
 
 	# Texture of the block that may be placed with `place`
-	var placable_tile: Texture = texture.subtexture(tile_size*4, tile_size*0, tile_size, tile_size) is lazy
+	var placable_tile: Texture = terrain_texture.subtexture(tile_size*4, tile_size*0, tile_size, tile_size) is lazy
 
 	# Camera which also act as the player location
 	var camera: SimpleCamera is lazy do
 		var camera = new SimpleCamera(display.as(not null))
-		camera.position = new Point3d[Float](2.0, 0.0, -1.0)
 		return camera
+	end
+
+	# Spawn or respawn the local player
+	fun spawn
+	do
+		var x = 2.0
+		var y = 0.0
+		var z = -1.0
+		while world.blocks[x, y, z] != null or
+			world.blocks[x, y+1.0, z] != null do
+
+			y += 1.0
+		end
+		world.falling_speed = 0.0
+		camera.position = new Point3d[Float](x, y, z)
 	end
 
 	redef fun setup
 	do
-		var display = new GammitDisplay(1920, 1200)
-		self.display = display
+		super
 
 		# You might want to grap all inputs too, but it will also grabs alt-tab
 		#display.sdl_display.grab_input = true
 
-		show_splash_screen
-
-		# Load the main texture
-		texture = display.load_texture_from_assets("terrain.png")
-		tile_size = 16
+		var display = display
+		assert display != null
 
 		world = new MineitWorld
 		world.generate(display, self)
+		spawn
 
 		display.background_color = new Color(0.0, 157.0/255.0, 249.0/255.0, 1.0)
 		display.lock_cursor = true
@@ -233,6 +263,13 @@ redef class GammitApp
 		setup_decor
 	end
 
+	redef fun load_textures
+	do
+		terrain_texture.pixelated = true
+		terrain_texture.load
+	end
+
+	# Add untouchable background elements
 	fun setup_decor
 	do
 		# Sun (no texture, color only)
@@ -248,11 +285,12 @@ redef class GammitApp
 		display.add block
 	end
 
-	#
-	fun show_splash_screen
+	# Show the splash screen and load its texture
+	redef fun show_splash_screen
 	do
 		var splash = new UIElement(0.0, 0.0, 0.0)
-		splash.texture = display.load_texture_from_assets("splash.png")
+		splash.texture = splash_texture
+		splash.texture.load
 		splash.program = display.ui_program
 		splash.scale = 2.0
 
@@ -265,10 +303,15 @@ redef class GammitApp
 	# Setup the UI elements
 	fun setup_ui
 	do
-		display.ui_program.mvp_matrix = new Matrix[Float].orthogonal(-1.0*display.aspect_ratio, 1.0*display.aspect_ratio, 1.0, -1.0, -1.0, 1.0)
+		display.ui_program.mvp_matrix = new Matrix[Float].orthogonal(
+			-1.0*display.aspect_ratio, 1.0*display.aspect_ratio,
+			1.0, -1.0,
+			-1.0, 1.0)
+
 		# Add a crosshair at the center of the screen
 		var crosshair = new UIElement(0.0, 0.0, 0.0)
-		crosshair.texture = display.load_texture_from_assets("crosshair.png")
+		crosshair.texture = crosshair_texture
+		crosshair.texture.load
 		crosshair.scale = 0.1
 		crosshair.program = display.ui_program
 		display.add crosshair
@@ -361,15 +404,48 @@ redef class GammitApp
 			var ty = block_under.y + 2.0
 			if camera.position.y > ty then
 				# Fall
+				world.falling_speed += world.gravity
 				camera.position.y = ty.max(camera.position.y - world.falling_speed)
 			end
-		else if camera.position.y < -40.0 then
+		else if camera.position.y < -64.0 then
 			# Falling out of the world, reset player/camera position
-			camera.position = new Point3d[Float](2.0, 0.0, -1.0)
+			spawn
 		else # block == null
 			# Nothing under the player, fall!
+			world.falling_speed += world.gravity
 			camera.position.y -= world.falling_speed
 		end
+	end
+
+	fun visible_in_center: nullable Block
+	do
+		var pitch = camera.pitch
+		var yaw = camera.yaw
+
+		var range = 5
+		for x in [1..range] do for xm in [-1, 1] do
+			for y in [1..range] do for ym in [-1, 1] do
+				for z in [1..range] do for zm in [-1, 1] do
+					var hit = intersects(x*xm, y*ym, z*zm)
+					if hit != null then return hit
+				end
+			end
+		end
+
+		return null
+	end
+
+	fun intersects(x, y, z: Int): nullable Block
+	do
+		var block = world.blocks[x.to_f, y.to_f, z.to_f]
+		if block == null then return null
+
+		var dx = x.to_f - camera.position.x
+		dx = dx.abs - 0.5
+		var oppx = camera.yaw.tan * dx + camera.position.x
+		#if oppx <= block.x
+		
+		return null
 	end
 
 	# Act on block visible at `x, y` on screen

@@ -34,7 +34,7 @@ redef class GammitApp
 		super
 
 		# Add overlay controls
-		var texture = display.load_texture_from_assets("android_controls.png")
+		var texture = new GammitGLTexture("android_controls.png")
 		var ts = texture.width/2
 		var look = texture.subtexture(0, 0, ts, ts)
 		var move = texture.subtexture(ts, 0, ts, ts)

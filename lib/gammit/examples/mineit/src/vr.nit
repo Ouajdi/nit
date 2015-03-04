@@ -124,14 +124,4 @@ redef class GammitDisplay
 		# We reset the viewport for selection
 		gl.viewport(0, 0, width, height)
 	end
-
-	redef fun load_texture_from_pixels(pixels, width, height, has_alpha)
-	do
-		var texture = super
-
-		# Set the minifying function to `linear` to avoid most of the flickering between eyes
-		gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.linear)
-
-		return texture
-	end
 end

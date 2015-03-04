@@ -104,9 +104,7 @@ redef class GammitApp
 
 	fun load_from_json(content: String): Bool
 	do
-		print "-------------0"
 		var json = content.to_json_value
-		print "-------------1"
 
 		if json.is_error then
 			print json.to_error
@@ -115,9 +113,7 @@ redef class GammitApp
 
 		# Clean old world
 		world = new MineitWorld
-		print "-------------a"
 		setup_ui
-		print "-------------b"
 
 		self.update_world_from_json json["world"]
 		self.camera.update_from_json json["camera"]
@@ -138,7 +134,7 @@ redef class GammitApp
 			var block = new Block(coords[c*3].to_f, coords[c*3+1].to_f, coords[c*3+2].to_f)
 			add block
 
-			block.texture = texture.subtexture_by_sides(
+			block.texture = terrain_texture.as(GammitGLTexture).subtexture_by_sides(
 				textures[c*4].to_f, textures[c*4+1].to_f,
 				textures[c*4+2].to_f, textures[c*4+3].to_f)
 

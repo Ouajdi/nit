@@ -187,7 +187,7 @@ redef class GammitApp
 			var tr = stream.read_float
 			var tb = stream.read_float
 
-			block.texture = texture.subtexture_by_sides(tl, tt, tr, tb)
+			block.texture = terrain_texture.as(GammitGLTexture).subtexture_by_sides(tl, tt, tr, tb)
 
 			var is_white = stream.read_bool
 			if is_white then
