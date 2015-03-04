@@ -70,14 +70,6 @@ redef class GammitDisplay
 		return sdl_wm_info.x11_window_handle
 	end
 
-	# Implement texture loading with SDL
-	redef fun load_texture_from_assets(path)
-	do
-		var sdl_image = new SDLImage.from_file("assets"/path)
-		return load_texture_from_pixels(sdl_image.pixels,
-			sdl_image.width0, sdl_image.height0, true) #sdl_image.amask)
-	end
-
 	redef fun check_lock_cursor
 	do
 		if lock_cursor and sdl_display.input_focus then
@@ -101,6 +93,18 @@ redef class GammitDisplay
 		var x11_display = x_open_default_display
 		assert not x11_display.address_is_null else print "x11 fail"
 		return x11_display
+	end
+end
+
+redef class GammitGLTexture
+	# Implement texture loading with SDL
+	redef fun platform_load
+	do
+		var sdl_image = new SDLImage.from_file("assets"/path)
+		self.width = sdl_image.width0
+		self.height = sdl_image.height0
+		self.has_alpha = true
+		return sdl_image.pixels
 	end
 end
 

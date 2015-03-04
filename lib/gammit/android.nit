@@ -59,8 +59,10 @@ redef class GammitDisplay
 		close_gles
 		close_egl
 	end
+end
 
-	redef fun load_texture_from_assets(path)
+redef class GammitGLTexture
+	redef fun platform_load
 	do
 		var asset = app.native_app_glue.ndk_native_activity.load_asset_from_apk(path.to_cstring)
 		assert asset != null else print "asset not found at: {path}"
@@ -68,8 +70,10 @@ redef class GammitDisplay
 		var png_texture = asset.to_png_texture
 		assert png_texture != null
 
-		return load_texture_from_pixels(png_texture.pixels,
-			png_texture.width, png_texture.height, png_texture.has_alpha) #sdl_image.amask)
+		self.width = png_texture.width
+		self.height = png_texture.height
+		self.has_alpha = png_texture.has_alpha
+		return png_texture.pixels
 	end
 end
 
@@ -108,7 +112,7 @@ redef class App
 	redef fun loop_body
 	do
 		app.poll_looper 0
-		print if paused then "paused" else "running"
+		#print if paused then "paused" else "running"
 
 		if paused then
 			sys.nanosleep(0, 1000000)
@@ -122,25 +126,29 @@ redef class App
 	redef fun init_window
 	do
 		if not first_init then
-			print "egl: {gammit.display.egl_display.is_valid}!!!!!!!!!!!!!!!!!!!!!!!!"
+			#print "egl: {gammit.display.egl_display.is_valid}!!!!!!!!!!!!!!!!!!!!!!!!"
 			#assert egl_display.is_valid else print egl_display.error
 
-		var native_display = egl_default_display
-		var native_window = app.native_app_glue.window
+			var native_display = egl_default_display
+			var native_window = app.native_app_glue.window
 
-		#gammit.display.setup_egl_display native_display
+			#gammit.display.setup_egl_display native_display
 
-		# We need 888 for selection with color
-		#gammit.display.select_egl_config(8, 8, 8, 0, 8, 0, 0)
+			# We need 888 for selection with color
+			#gammit.display.select_egl_config(8, 8, 8, 0, 8, 0, 0)
 
-		# Android only
-		#var format = gammit.display.egl_config.attribs(gammit.display.egl_display).native_visual_id
-		#native_window.set_buffer_geometry format
+			# Android only
+			#var format = gammit.display.egl_config.attribs(gammit.display.egl_display).native_visual_id
+			#native_window.set_buffer_geometry format
 
-		gammit.display.setup_egl_context native_window
+			gammit.display.setup_egl_context native_window
 
-		gammit.display.setup_gles
+			gammit.display.setup_gles
 			#setup(gammit.display.width, gammit.display.height)
+
+			gammit.show_splash_screen
+
+			gammit.load_textures
 		end
 		first_init = false
 

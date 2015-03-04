@@ -64,10 +64,6 @@ abstract class Display
 	do
 		entries.add e
 	end
-
-	fun load_texture_from_assets(path: String): T is abstract
-
-	fun load_texture_from_pixels(pixels: NativeCByteArray, width, height: Int, has_alpha: Bool): T is abstract
 end
 
 class BaseVisible
@@ -91,6 +87,8 @@ class Visible
 	fun draw_mode: GLDrawMode do return new GLDrawMode.triangles
 
 	var program: nullable GammitProgram = null is writable
+
+	var category: nullable Object = null is writable
 end
 
 class VisibleSquare
@@ -151,6 +149,15 @@ end
 
 # A Gammit texture
 class Texture
+	var path: String
+
+	# Shoud this texture be displayed with visible pixels?
+	#
+	# Must be set before calling `load`.
+	var pixelated = false is writable
+
+	fun load is abstract
+
 	# Get a reference to a subportion of this texture
 	fun subtexture(left, top, width, height: Int): Texture is abstract
 end

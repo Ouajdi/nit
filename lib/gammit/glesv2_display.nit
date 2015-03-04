@@ -28,7 +28,7 @@ import matrix_algebra
 class GammitDisplay
 	super Display
 
-	redef type T: GammitGLTexture
+	redef type T: Texture
 
 	# Desired display width, and after `setup`, the real display width
 	redef var width: Int
@@ -166,10 +166,11 @@ class GammitDisplay
 	fun draw_all_the_things_core
 	do
 		# TODO better iterators and cover null textures!
+		print visibles.sets.length
 		for set in visibles.sets do
 			var draw_mode = set.draw_mode
 			var texture = set.gl_texture
-			if texture != null then print "texture {texture.id}: {glIsTexture(texture.id)}"
+			#if texture != null then print "texture {texture.id}: {glIsTexture(texture.id)}"
 
 			var program = set.program
 			if program == null then program = default_program
@@ -383,9 +384,9 @@ class GammitDisplay
 			for entry in set do if entry isa Selectable then # TODO move up selectable to VisibleMap
 
 				# HACK!
-				if (entry.x - selection_camera.x).to_f.abs > 5.0 or
-				   (entry.y - selection_camera.y).to_f.abs > 5.0 or
-				   (entry.z - selection_camera.z).to_f.abs > 5.0 then continue
+				if (entry.x - selection_camera.x).to_f.abs > 4.0 or
+				   (entry.y - selection_camera.y).to_f.abs > 4.0 or
+				   (entry.z - selection_camera.z).to_f.abs > 4.0 then continue
 
 				var n_vertices = entry.vertices.length / 3
 
@@ -426,7 +427,7 @@ class GammitDisplay
 			end
 
 			# Prepare data for OpenGL ES
-			# TODO DO NOT USE THE set.vertext							
+			# TODO DO NOT USE THE set.vertex							
 			var vertex = set.vertex(program.color, colors)
 			program.color.array_pointer0(4, vertex)
 			program.color.array_enabled = true
@@ -472,28 +473,6 @@ class GammitDisplay
 		end
 	end
 
-	redef fun load_texture_from_pixels(pixels, width, height, has_alpha)
-	do
-		var gl_tex = new GLTexture
-		gl_tex.gen
-		gl_tex.bind
-
-		gl_tex_image2d(width, height, pixels, has_alpha)
-
-		gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.linear_mipmap_linear)
-		gl.tex_parameter_mag_filter(gl_TEXTURE_2D, new GLTextureMagFilter.nearest)
-
-		gl.tex_parameter_wrap_s(gl_TEXTURE_2D, new GLTextureWrap.mirrored_repeat)
-		gl.tex_parameter_wrap_t(gl_TEXTURE_2D, new GLTextureWrap.mirrored_repeat)
-
-		glHint(gl_GENERATE_MIPMAP_HINT, gl_NICEST)
-		glGenerateMipmap(gl_TEXTURE_2D)
-
-		assert_no_gl_error
-
-		return new GammitGLTexture(gl_tex, width, height)
-	end
-
 	# Is the cursor locked et the center of the screen?
 	var lock_cursor = false is writable
 
@@ -503,14 +482,60 @@ class GammitDisplay
 	var show_cursor: Bool = true is writable
 end
 
+redef class Texture
+	new(path: String) do return new GammitGLTexture(path)
+end
+
 class GammitGLTexture
 	super Texture
 
-	var gl_texture: GLTexture
+	var has_alpha = false
 
-	var width: Int
+	#var path: String
 
-	var height: Int
+	fun is_loaded: Bool do return gl_texture != null and glIsTexture(gl_texture.id)
+
+	redef fun load
+	do
+		# Call platform specific implementation
+		var pixels = platform_load
+
+		var gl_tex = gl_texture
+		if gl_tex == null then
+			gl_tex = new GLTexture
+			gl_tex.gen
+			self.gl_texture = gl_tex
+		end
+
+		gl_tex.bind
+
+		gl_tex_image2d(width, height, pixels, has_alpha)
+
+		gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.linear_mipmap_linear)
+		#gl.tex_parameter_min_filter(gl_TEXTURE_2D, new GLTextureMinFilter.linear)
+
+		var mag_filter = if pixelated then new GLTextureMagFilter.nearest else new GLTextureMagFilter.linear
+		gl.tex_parameter_mag_filter(gl_TEXTURE_2D, mag_filter)
+
+		gl.tex_parameter_wrap_s(gl_TEXTURE_2D, new GLTextureWrap.mirrored_repeat)
+		gl.tex_parameter_wrap_t(gl_TEXTURE_2D, new GLTextureWrap.mirrored_repeat)
+
+		glHint(gl_GENERATE_MIPMAP_HINT, gl_NICEST)
+		glGenerateMipmap(gl_TEXTURE_2D)
+
+		assert_no_gl_error
+	end
+
+	# Platform dependent
+	# sets `width`, `height` and `has_alpha`
+	# Returns pixels
+	protected fun platform_load: NativeCByteArray is abstract
+
+	var gl_texture: nullable GLTexture = null
+
+	var width = 0
+
+	var height = 0
 
 	var coordinates: Array[Float] = [0.0, 0.0,
 			                         0.0, 1.0,
@@ -533,7 +558,10 @@ class GammitGLTexture
 	# Get a subtexture by the coordinates of each sides
 	fun subtexture_by_sides(l, t, r, b: Float): Subtexture
 	do
-		var tex = new Subtexture(gl_texture, width, height, l, t, r, b)
+		var tex = new Subtexture(path, l, t, r, b)
+		tex.gl_texture = gl_texture
+		tex.width = width
+		tex.height = height
 		tex.coordinates = [l, t,
 			               l, b,
 			               r, b,
@@ -995,22 +1023,22 @@ class DefaultGammitProgram
 		""" @ glsl_vertex_shader
 
 	# Position of each vertex
-	fun position: AttributeFloatVec4 is lazy do return attributes["position"].as(AttributeFloatVec4)
+	var position: AttributeFloatVec4 is lazy do return attributes["position"].as(AttributeFloatVec4)
 
 	# Color of each vertex
-	fun color: AttributeFloatVec4 is lazy do return attributes["color"].as(AttributeFloatVec4)
+	var color: AttributeFloatVec4 is lazy do return attributes["color"].as(AttributeFloatVec4)
 
 	# Translation to apply to each vertex
-	fun translation: AttributeFloatVec4 is lazy do return attributes["translation"].as(AttributeFloatVec4)
+	var translation: AttributeFloatVec4 is lazy do return attributes["translation"].as(AttributeFloatVec4)
 
 	# Scale to apply to each vertex
-	fun scale: AttributeFloat is lazy do return attributes["scale"].as(AttributeFloat)
+	var scale: AttributeFloat is lazy do return attributes["scale"].as(AttributeFloat)
 
 	# Texture coordinate of each vertex
-	fun texture_coordinates: AttributeFloatVec2 is lazy do return attributes["texCoord"].as(AttributeFloatVec2)
+	var texture_coordinates: AttributeFloatVec2 is lazy do return attributes["texCoord"].as(AttributeFloatVec2)
 
 	#
-	fun projection: UniformFloatMat4 is lazy do return uniforms["projection"].as(UniformFloatMat4)
+	var projection: UniformFloatMat4 is lazy do return uniforms["projection"].as(UniformFloatMat4)
 
 	#
 	fun fragment_shader_source: String do return """
@@ -1039,9 +1067,9 @@ class DefaultGammitProgram
 		""" @ glsl_fragment_shader
 
 	#
-	fun texture: UniformSampler2D is lazy do return uniforms["vTex"].as(UniformSampler2D)
+	var texture: UniformSampler2D is lazy do return uniforms["vTex"].as(UniformSampler2D)
 
-	fun use_texture: UniformBool is lazy do return uniforms["use_texture"].as(UniformBool)
+	var use_texture: UniformBool is lazy do return uniforms["use_texture"].as(UniformBool)
 end
 
 class GammitSelectionProgram
@@ -1163,14 +1191,15 @@ class VisibleVault
 		for set in sets do
 			if set.draw_mode == draw_mode and
 			   set.gl_texture == gl_texture and
-			   set.program == e.program then
+			   set.program == e.program and
+			   set.category == e.category then
 				return set
 			end
 		end
 
 		if not create_set then return null
 
-		var set = new VisibleSet(draw_mode, gl_texture, e.program)
+		var set = new VisibleSet(draw_mode, gl_texture, e.program, e.category)
 		sets.add set
 		return set
 	end
@@ -1213,6 +1242,7 @@ class VisibleSet
 	var draw_mode: GLDrawMode
 	var gl_texture: nullable GLTexture
 	var program: nullable GammitProgram
+	var category: nullable Object
 
 	private var vertex_cache = new Map[Attribute, GLfloatArray]
 

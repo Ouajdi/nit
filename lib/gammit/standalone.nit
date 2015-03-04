@@ -34,7 +34,21 @@ class GammitApp
 	#
 	# * Create the display and assign it to `self.display`
 	# * Setup the world, main menu or loading screen
-	fun setup is abstract
+	fun setup
+	do
+		var display = new GammitDisplay(1920, 1200)
+		self.display = display
+
+		show_splash_screen
+
+		load_textures
+	end
+
+	# Load the main textures
+	fun load_textures do end
+
+	# May load textyres
+	fun show_splash_screen do end
 
 	#
 	fun frame_logic do end
