@@ -4,7 +4,7 @@
 #
 # This file is free software, which comes along with NIT.  This software is
 # distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without  even  the implied warranty of  MERCHANTABILITY or  FITNESS FOR A 
+# without  even  the implied warranty of  MERCHANTABILITY or  FITNESS FOR A
 # PARTICULAR PURPOSE.  You can modify it is you want,  provided this header
 # is kept unaltered, and a notification of the changes is added.
 # You  are  allowed  to  redistribute it and sell it, alone or is a part of
@@ -96,6 +96,25 @@ class Range[E: Discrete]
 		after = to
 	end
 
+	# Get a new `Range[E]` with an `offset` from `recv`
+	#
+	# ~~~
+	# assert [0..1[+1 == [1..2[
+	# assert [-10..10]+10 == [0..20]
+	# ~~~
+	fun +(offset: Int): Range[E]
+	do
+		return new Range[E](first.successor(offset), last.successor(offset))
+	end
+
+	# Get a new `Range[E]` with a negative `offset` from `recv`
+	#
+	# ~~~
+	# assert [0..1[-1 == [-1..0[
+	# assert [-10..10]-10 == [-20..0]
+	# ~~~
+	fun -(offset: Int): Range[E] do return self + -offset
+
 	# Two ranges are equals if they have the same first and last elements.
 	#
 	#     var a = new Range[Int](10, 15)
@@ -127,9 +146,9 @@ private class IteratorRange[E: Discrete]
 	redef var item is noinit
 
 	redef fun is_ok do return _item < _range.after
-	
+
 	redef fun next do _item = _item.successor(1)
-	
+
 	init
 	do
 		_item = _range.first
