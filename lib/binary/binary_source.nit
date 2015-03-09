@@ -138,7 +138,7 @@ for dt in data_types do print """
 for dt in data_types do print """
 	fun read_{{{dt.nit_short_name}}}: {{{dt.nit_type}}} `{
 		{{{dt.c_type}}} value;
-		fread(&value, sizeof({{{dt.c_type}}}), 1, recv);
+		int r = fread(&value, sizeof({{{dt.c_type}}}), 1, recv);
 		return value;
 	`}
 """
