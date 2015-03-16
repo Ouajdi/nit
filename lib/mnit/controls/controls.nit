@@ -413,7 +413,7 @@ class TextInputControl
 	# Real text entered in this field
 	#
 	# This can be different from `visible_text`.
-	var text = ""
+	var text = "" is writable
 
 	# Listeners on the event when hitting enter on the control
 	var receiver: HitReceiver

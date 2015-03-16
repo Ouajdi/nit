@@ -37,21 +37,26 @@ class BorderImageSet
 	# center
 	var c: Image
 
+	# Load the default image set found at `controls/default.png` with `tile_size` of 8
 	init default do from_image("controls/default.png", 8)
 
-	init(path: String)
+	# Load the image set in `folder`
+	#
+	# Will search for 9 images. TODO list
+	init from_folder(folder: String)
 	do
-		tl = app.load_image("{path}/tl.png")
-		tr = app.load_image("{path}/tr.png")
-		bl = app.load_image("{path}/bl.png")
-		br = app.load_image("{path}/br.png")
-		t = app.load_image("{path}/t.png")
-		b = app.load_image("{path}/b.png")
-		l = app.load_image("{path}/l.png")
-		r = app.load_image("{path}/r.png")
-		c = app.load_image("{path}/c.png")
+		tl = app.load_image("{folder}/tl.png")
+		tr = app.load_image("{folder}/tr.png")
+		bl = app.load_image("{folder}/bl.png")
+		br = app.load_image("{folder}/br.png")
+		t = app.load_image("{folder}/t.png")
+		b = app.load_image("{folder}/b.png")
+		l = app.load_image("{folder}/l.png")
+		r = app.load_image("{folder}/r.png")
+		c = app.load_image("{folder}/c.png")
 	end
 
+	# Load the image set form the image at `path` using the given `tile_size`
 	init from_image(path: String, tile_size: Int)
 	do
 		var ts = tile_size
