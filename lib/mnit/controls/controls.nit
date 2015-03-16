@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Provides controls bases for mnit display system
+# Controls for the Mnit display system
+#
+# Provides both common classes such as `Button` and services to implement.
 module controls
 
 import mnit_display
@@ -22,66 +24,98 @@ import mnit_input
 import geometry
 import tileset
 
-# General control class
-class Control
+# Abstract control at the head of the controls hierarchy
+abstract class Control
+
 	# Draw `self` to `display`
 	fun draw(display: Display) do end
 
-	# try to accept input
-	# returns true if intercepted
+	# Propagation of an input `event` within `screen`
+	#
+	# Returns `true` if intercepted.
+	#
+	# Usually a `Control` will intercept an event when it acts upon it.
 	fun input(screen: Screen, event: InputEvent): Bool do return false
 
+	# What class of `ContainerControl` can hold `self`
 	type PARENT: ContainerControl
 
+	# `PARENT` controller holding self, if any
 	var parent: nullable PARENT = null
 end
 
-# Clickable control
+# Clickable or tappable on-screen control
+#
+# TODO rename to VisibleControl
 class PointerControl
 	super Control
 
-	# event is within control
+	# Does `event` points within `self`?
 	fun within(event: PointerEvent): Bool is abstract
 
+	# Reference point on-screen
 	var anchor: nullable IPoint[Numeric] = null
+
+	# Padding applied when needing
+	#
+	# This value is used by many subclasses for different purposes.
+	# This won't affect fields that are centered.
+	var padding = 8 is writable
 end
 
-# Selectable control to catch keyboard inputs
+# Selectable control to capture keyboard inputs
 class SelectableControl
 	super Control
 
-	var selected: Bool = false
+	# Is `self` currently selected by any screen?
+	#
+	# Set and unset by `select` and `unselect`.
+	#
+	# This is only an heuristice since only `Screen` knows what is the locally selected control.
+	# It is very useful for drawing and usually display the intended behavior.
+	var selected = false
 
+	# Select `self` and `unselect` the previously selected control in `screen`
 	fun select(screen: Screen)
 	do
-		if screen.selected != null then screen.selected.selected = false
+		var old = screen.selected
+		if old != null then old.selected = false
 
 		selected = true
 		screen.selected = self
 	end
 
+	# Unselect `self` as the selected control in `screen`
+	#
+	# Also unselect the previously selected control in `screen`,
+	# even if not `self`.
 	fun unselect(screen: Screen)
 	do
-		if screen.selected != null
-		then
-			screen.selected.selected = false
-		end
+		var old = screen.selected
+		if old != null then old.selected = false
 
 		selected = false
 		screen.selected = null
 	end
 end
 
-# Control holding other controls
+# Control composed of other controls
+#
+# TODO compose of list intead of subclass
 class ContainerControl
 	super Control
 	super List[Control]
 
+	# Draw self and subcontrols
 	redef fun draw(display)
 	do
 		for control in self do control.draw(display)
 	end
 
+	# A `ContainerControl` relay this call to its children
+	#
+	# Subclasses may intercept the event by themselves,
+	# but should usally call super.
 	redef fun input(screen, event)
 	do
 		var intercepted = false
@@ -100,21 +134,29 @@ class ContainerControl
 	end
 end
 
-# Control to manage a whole screen
+# Control to manage a whole game screen
+#
+# This may very well not cover the whole screen,
+# it can be used to manage transition between screens.
 class Screen
 	super ContainerControl
 
-	# which (if any) selectable control is selected
+	# Which `SelectableControl` is selected, if any
 	var selected: nullable SelectableControl = null
 end
 
 # Receiver called by controls when activated by an input event
+#
 # Each button is associated with one HitReceiver
+#
+# TODO rename HitReceiver to EventListener
 interface HitReceiver
+
+	# React when receiving `event` on `sender`
 	fun hit(sender: Control, event: InputEvent) is abstract
 end
 
-# HitReceiver collection
+# A collection of `HitReceiver`
 class MultipleHitReceiver
 	super HitReceiver
 	super List[HitReceiver]
@@ -122,14 +164,17 @@ class MultipleHitReceiver
 	redef fun hit(sender, event) do for r in self do r.hit(sender, event)
 end
 
-# Control activated by a pointer event
+# Simple clickable visible control
 class Button
 	super PointerControl
 
+	# Listeners on events
 	var receiver: HitReceiver
 
+	# Behavior on click raised by an `InputEvent`
 	fun on_click(event: InputEvent) do receiver.hit(self, event)
 
+	# Raises `on_click` on a depressed `PointerEvent` `input`
 	redef fun input(screen, event)
 	do
 		if event isa PointerEvent and within(event) then
@@ -141,16 +186,22 @@ class Button
 	end
 end
 
-# Precise key listener but invisible control
+# Invisible control catching `keys`
 class KeyCatcher
 	super Control
 
+	# TODO
 	var receiver: HitReceiver
-	var keys: Array[String] # TODO change to char
+
+	# Catched keys
+	#
+	# The key ids are platform dependent.
+	# Use the SDL key name and the Android key code as `String`.
+	var keys: Array[String]
 
 	redef fun input(screen, event)
 	do
-		if event isa KeyEvent and event.to_c != null and keys.has(event.to_c.to_s) then
+		if event isa KeyEvent and keys.has(event.name) then
 			receiver.hit(self, event)
 			return true
 		end
@@ -159,9 +210,11 @@ class KeyCatcher
 	end
 end
 
+# Rectangular visible control
 class RectangleControl
 	super PointerControl
 
+	# TODO use anchor
 	var top: Int = 0 is writable
 	var left: Int = 0 is writable
 	var width: Int = 0
@@ -202,6 +255,7 @@ class RectangleControl
 	fun draw_back(display: Display) do end
 end
 
+# A simple rectangular button
 class RectangleButton
 	super Button
 	super RectangleControl
@@ -211,8 +265,6 @@ end
 class RectangleMenu
 	super RectangleControl
 	super ContainerControl
-
-	var padding: Int = 8
 
 	redef fun top=(t: Int)
 	do
@@ -334,6 +386,10 @@ class HorizontalMenu
 	end
 end
 
+#redef class App
+	#var default_control_font: nullable TileSetFont
+#end
+
 class TextRectangleButton
 	super RectangleButton
 
@@ -348,29 +404,28 @@ class TextRectangleButton
 end
 
 # Control to input text with the keyboard
+#
+# Intercepts all keyboard inputs when `selected`.
 class TextInputControl
 	super RectangleControl
 	super SelectableControl
 
+	# Real text entered in this field
+	#
+	# This can be different from `visible_text`.
+	var text = ""
+
+	# Listeners on the event when hitting enter on the control
 	var receiver: HitReceiver
 
+	# Text to show besides the input field
 	var label_text: String
 
-	var input_img: nullable Image = null
-	var input_text: String = ""
+	# `TileSetFont` used to draw `visible_text` and `label_text`
+	var font: TileSetFont is writable
 
-	var font: TileSetFont
-
-	var padding: Int = 8
-
-	fun text: String do return input_text
-	fun text= (t: String)
-	do
-		input_text = t
-		input_img = null
-	end
-
-	private fun visible_text: String do return input_text
+	# Text to show on screen
+	protected fun visible_text: String do return text
 
 	redef fun draw(display)
 	do
@@ -378,7 +433,7 @@ class TextInputControl
 
 		display.text(label_text, font, left+8, top+16)
 
-		if not input_text.is_empty then display.text(visible_text, font, left+16, top+32)
+		if not text.is_empty then display.text(visible_text, font, left+16, top+32)
 	end
 
 	redef fun input(screen, event)
@@ -392,13 +447,13 @@ class TextInputControl
 						if key.length == 1 then
 							var char = key[0]
 							if accepts_char(char) then
-								text = input_text + key
+								text = text + key
 							end
-						else if key == "enter" then
+						else if event.name == "enter" then
 							receiver.hit(self, event)
-						else if key == "backspace" then
+						else if event.name == "backspace" then
 							if not text.is_empty then
-								text = input_text.substring(0, input_text.length-1)
+								text = text.substring(0, text.length-1)
 							end
 						end
 					end
@@ -416,31 +471,43 @@ class TextInputControl
 		return false
 	end
 
-	# is this a recognized character?
-	fun accepts_char(char: Char): Bool
-	do
-		return char >= ' ' and char <= '~'
-	end
+	# Is `char` an acceptable input?
+	fun accepts_char(char: Char): Bool do return char >= ' ' and char <= '~'
 end
 
-# Hidden text input
+# Text input for passwords and other hidden text
 class PasswordInputControl
 	super TextInputControl
 
-	redef fun visible_text do return "*" * input_text.length
+	# Shows only '*'
+	redef fun visible_text do return "*" * text.length
 end
 
 # Text input limited to numbers
-class NumberInputControl
+class IntInputControl
 	super TextInputControl
 
 	redef fun accepts_char(char) do return char >= '0' and char <= '9'
 
+	# Number entered in the field, if any
 	fun number: nullable Int
 	do
-		if input_text.is_empty then
-			return null
-		else return input_text.to_i
+		if text.is_empty then return null
+		return text.to_i
+	end
+
+	# Set number in the field
+	fun number=(value: nullable Int)
+	do
+		if value == null then
+			text = ""
+		else text = value.to_s
+	end
+
+	redef fun text=(value)
+	do
+		assert value.is_empty or value.is_numeric
+		super
 	end
 end
 
@@ -451,11 +518,12 @@ class Separator
 	redef fun draw(display) do draw_back(display)
 end
 
-# Basic rectangle button using an image
+# Simple rectangle button using an image
 class ImageRectangleButton
 	super RectangleButton
 
-	var img: Image
+	# Image to display centered on this button
+	var image: Image is writable
 
 	redef fun draw(display)
 	do
@@ -464,7 +532,7 @@ class ImageRectangleButton
 		var l = left.to_f
 		var r = right.to_f
 
-		display.blit_stretched(img, l, b, l, t, r, t, r, b)
+		display.blit_stretched(image, l, b, l, t, r, t, r, b)
 
 		super
 	end
