@@ -50,6 +50,7 @@ in "Java" `{
 	import android.widget.GridLayout;
 	import android.widget.PopupWindow;
 	import android.widget.TextView;
+	import android.widget.ArrayAdapter;
 
 	import java.lang.*;
 	import java.util.*;
@@ -66,9 +67,9 @@ class ClickEvent
 	super AppEvent
 
 	# Sender of this event
-	var sender: Button
+	var sender: Eventful
 
-	redef fun react do sender.click self
+	redef fun react do end #sender.click self
 end
 
 # Receiver of events not handled directly by the sender
@@ -101,6 +102,13 @@ end
 # An `Object` that raises events
 abstract class Eventful
 	var event_catcher: EventCatcher = app is lazy, writable
+
+	# Click event
+	#
+	# By default, this method calls `app.catch_event`. It can be specialized
+	# with custom behavior or the receiver of `catch_event` can be changed
+	# with `event_catcher=`.
+	fun click(event: AppEvent) do event_catcher.catch_event(event)
 end
 
 #
@@ -166,13 +174,6 @@ class Button
 		self.native = native.new_global_ref
 	end
 
-	# Click event
-	#
-	# By default, this method calls `app.catch_event`. It can be specialized
-	# with custom behavior or the receiver of `catch_event` can be changed
-	# with `event_catcher=`.
-	fun click(event: AppEvent) do event_catcher.catch_event(event)
-
 	private fun click_from_native do click(new ClickEvent(self))
 end
 
@@ -187,6 +188,24 @@ class EditText
 		var native = new NativeEditText(app.activities.first.native)
 		self.native = native.new_global_ref
 	end
+end
+
+class ListView
+	super Eventful
+
+	var native: NativeListView is noinit
+	var adapter: NativeArrayAdapter is noinit
+	var array: JavaArrayListOfString is noinit
+
+	init
+	do
+		native = new NativeListView(app.native_activity, self)
+		array = new JavaArrayListOfString
+		adapter = new NativeArrayAdapter(app.native_activity, array)
+		native.adapter = adapter
+	end
+
+	private fun click_from_native do click(new ClickEvent(self))
 end
 
 #
@@ -343,5 +362,55 @@ extern class NativeButton in "Java" `{ android.widget.Button `}
 		Sys sys = NativeButton_sys(recv);
 		JNIEnv *env = Sys_jni_env(sys);
 		return (*env)->NewGlobalRef(env, recv);
+	`}
+end
+
+extern class NativeListView in "Java" `{ android.widget.ListView `}
+	super NativeViewGroup
+
+	new(context: NativeActivity, sender_object: ListView)
+	import ListView.click_from_native in "Java" `{
+		final int final_sender_object = sender_object;
+
+		return new android.widget.ListView(context) {
+
+			@Override
+			public boolean onTouchEvent(MotionEvent event) {
+				if(event.getAction() == MotionEvent.ACTION_DOWN) {
+					ListView_click_from_native(final_sender_object);
+					return true;
+				}
+				return false;
+			}
+		};
+	`}
+
+	fun adapter=(adapter: NativeArrayAdapter) in "Java" `{
+		recv.setAdapter(adapter);
+	`}
+end
+
+extern class JavaArrayListOfString in "Java" `{ java.util.ArrayList<String> `}
+	type E: JavaString
+
+	new in "Java" `{ return new ArrayList<String>(); `}
+	fun add(e: E) in "Java" `{ recv.add(e); `}
+	fun clear in "Java" `{ recv.clear(); `}
+end
+
+extern class NativeArrayAdapter in "Java" `{ android.widget.ArrayAdapter<java.lang.String> `}
+	new(context: NativeActivity, array: JavaArrayListOfString) in "Java" `{
+		return new ArrayAdapter<String>(context, android.R.layout.simple_list_item_1, array);
+	`}
+
+	fun notify_data_set_changed in "Java" `{
+		final ArrayAdapter final_recv = recv;
+
+		((Activity)recv.getContext()).runOnUiThread(new Runnable() {
+			@Override
+			public void run()  {
+				final_recv.notifyDataSetChanged();
+			}
+		});
 	`}
 end
