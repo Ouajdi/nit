@@ -71,7 +71,7 @@ in "Java" `{
 	import android.provider.Settings;
 `}
 
-redef fun print(txt) do super
+redef fun print(text) do log_write(priority_info, app.log_prefix.to_cstring, text.to_s.to_cstring)
 
 redef class DataStore
 	fun last_visit_date: nullable String do return self["last_visit_date"].as(nullable String)
@@ -168,14 +168,27 @@ redef class Activity
 	do
 		print "-------- check beers since {date}"
 		var notif = self.notif
+		print "-------- 0"
 		if notif == null then notif = new Notification(null, null)
+		print "-------- 1"
+		var jstr = "http://benitlux.xymus.net/rest/since/{date}".to_java_string
+		print "-------- 2"
 
-		var r = hack_webrequest("http://benitlux.xymus.net/rest/since/{date}".to_java_string).to_s
+		hack_webrequest(date.to_java_string, jstr)
+	end
+
+	fun update_beer_diff_from_json(date, json_jstr: JavaString)
+	do
+		var json = json_jstr.to_s
 		print "-- a"
 		var events: nullable BeerEvents = null
+		print json
 
-		if not r.is_empty and r.chars.first == '{' then
-			var deserializer = new JsonDeserializer(r)
+		if not json.is_empty and json.chars.first == '{' then
+		print "-- a0"
+		# TODO crashes here
+			var deserializer = new JsonDeserializer(json)
+		print "-- a1"
 			events = deserializer.deserialize.as(nullable BeerEvents)
 		end
 		print "-- b"
@@ -214,25 +227,51 @@ redef class Activity
 		beers_list.adapter.notify_data_set_changed
 	end
 
-	fun hack_webrequest(uri: JavaString): JavaString in "Java" `{
+	fun hack_webrequest(date_arg, uri_arg: JavaString)
+	import update_beer_diff_from_json in "Java" `{
+
+final int final_recv = recv;
+final String date = date_arg;
+final String uri = uri_arg;
+
+Runnable r = new Runnable() {
+	@Override
+	public void run() {
+
+		android.util.Log.d("NIT", "hack_webrequest");
 		try {
+		android.util.Log.d("NIT", "a");
 			DefaultHttpClient client = new DefaultHttpClient();
+		android.util.Log.d("NIT", "b");
 			HttpGet get = new HttpGet(uri);
+		android.util.Log.d("NIT", "c "+uri);
 			HttpResponse res = client.execute(get);
+		android.util.Log.d("NIT", "d");
 			StatusLine line = res.getStatusLine();
+		android.util.Log.d("NIT", "e");
 
 			if(line.getStatusCode() == HttpStatus.SC_OK){
-					ByteArrayOutputStream out = new ByteArrayOutputStream();
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				res.getEntity().writeTo(out);
 				out.close();
-				return out.toString();
+				// android.util.Log.d("NIT", out.toString());
+
+				Activity_update_beer_diff_from_json(final_recv, date, out.toString());
+				//return out.toString();
 			} else {
+			// android.util.Log.d("NIT", "not ok");
 				res.getEntity().getContent().close();
-				return "not ok";
+				//return "not ok";
 			}
 		} catch (Exception ex) {
-				return ex.getMessage();
+				android.util.Log.d("NIT", "ex");
+				android.util.Log.d("NIT", ex.toString());
+				//return ex.getMessage();
 		}
+	}
+};
+
+(new Thread(r)).start();
 	`}
 
 	fun update_last_visit
