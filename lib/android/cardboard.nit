@@ -27,7 +27,7 @@
 module cardboard
 
 import java::collections
-import native_app_glue
+import dalvik
 
 in "Java" `{
 	import com.google.vrtoolkit.cardboard.CardboardActivity;
